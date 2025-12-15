@@ -3,11 +3,17 @@ import { getSocket } from '../socketService'
 import { useChatStore } from '../stores/useChatStore'
 import axios from 'axios'
 
-export default function ChatRoom({ token, conversationId, user }) {
+export default function ChatRoom({ token, conversationId, user, searchQuery }) {
   const [text, setText] = useState('');
   const [typingUsers, setTypingUsers] = useState(new Set());
-  const messages = useChatStore(s => s.messages);
+  const messagesStore = useChatStore(s => s.messages);
   const addMessage = useChatStore(s => s.addMessage);
+
+  // Filter messages based on search query
+  const messages = searchQuery
+    ? messagesStore.filter(m => m.text?.toLowerCase().includes(searchQuery.toLowerCase()))
+    : messagesStore;
+
   const prependMessages = useChatStore(s => s.prependMessages) || ((newMsgs) => useChatStore.setState(state => ({ messages: [...newMsgs, ...state.messages] }))); // Fallback if store doesn't have prepend
 
   const scrollRef = useRef(null);

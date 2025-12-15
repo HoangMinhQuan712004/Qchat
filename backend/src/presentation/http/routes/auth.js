@@ -31,7 +31,14 @@ router.post('/login', async (req, res) => {
 router.get('/me', require('../../../infrastructure/middleware/jwt'), async (req, res) => {
   const u = await User.findById(req.user.id);
   if (!u) return res.status(404).json({ message: 'User not found' });
-  res.json({ user: { id: u._id, username: u.username, displayName: u.displayName, avatarUrl: u.avatarUrl } });
+
+  // Lazy Init Balance for existing users
+  if (u.balance === undefined) {
+    u.balance = 200000;
+    await u.save();
+  }
+
+  res.json({ user: { id: u._id, username: u.username, displayName: u.displayName, avatarUrl: u.avatarUrl, balance: u.balance } });
 });
 
 module.exports = router;

@@ -8,7 +8,9 @@ const UserSchema = new Schema({
   avatarUrl: { type: String },
   isOnline: { type: Boolean, default: false },
   lastSeenAt: { type: Date },
-  friends: [{ type: Schema.Types.ObjectId, ref: 'User' }]
+  friends: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+  blocked: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+  balance: { type: Number, default: 200000 }
 }, { timestamps: true });
 
 module.exports = model('User', UserSchema);

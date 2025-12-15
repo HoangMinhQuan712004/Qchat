@@ -8,6 +8,7 @@ const friendsRoutes = require('./routes/friends');
 const groupsRoutes = require('./routes/groups');
 
 const uploadRoutes = require('./routes/upload');
+const walletRoutes = require('./routes/wallet');
 const path = require('path');
 
 function createApp() {
@@ -25,6 +26,7 @@ function createApp() {
   app.use('/friends', friendsRoutes);
   app.use('/groups', groupsRoutes);
   app.use('/upload', uploadRoutes);
+  app.use('/wallet', walletRoutes);
 
   app.get('/', (req, res) => res.json({ ok: true }));
 

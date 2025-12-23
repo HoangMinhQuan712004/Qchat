@@ -2,8 +2,10 @@ const express = require('express');
 const expressJwt = require('../../../infrastructure/middleware/jwt');
 const User = require('../../../infrastructure/models/user');
 const Transaction = require('../../../infrastructure/models/transaction');
+const Notification = require('../../../infrastructure/models/notification');
 const mongoose = require('mongoose');
 const crypto = require('crypto');
+const { getIO } = require('../../socket/socket');
 
 const router = express.Router();
 
@@ -66,6 +68,35 @@ router.post('/transfer', expressJwt, async (req, res) => {
             hash: '0x' + crypto.randomBytes(32).toString('hex')
         });
         await tx.save();
+
+        const io = getIO();
+        // Notify Receiver
+        const receiverMsg = `You received $${amount} from ${fromUser.username}`;
+        io.to(String(toUser._id)).emit('wallet_notification', {
+            type: 'success',
+            message: receiverMsg
+        });
+        await Notification.create({
+            user: toUser._id,
+            type: 'transfer_received',
+            title: 'Money Received',
+            message: receiverMsg,
+            relatedId: tx._id
+        });
+
+        // Notify Sender
+        const senderMsg = `Transfer successful: $${amount} sent to ${toUser.username}`;
+        io.to(String(fromUserId)).emit('wallet_notification', {
+            type: 'success',
+            message: senderMsg
+        });
+        await Notification.create({
+            user: fromUserId,
+            type: 'transfer_sent',
+            title: 'Money Sent',
+            message: senderMsg,
+            relatedId: tx._id
+        });
 
         res.json({ ok: true, balance: fromUser.balance, transaction: tx });
     } catch (err) {

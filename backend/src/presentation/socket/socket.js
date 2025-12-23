@@ -3,9 +3,12 @@ const socketJwtMiddleware = require('../../infrastructure/middleware/socketAuth'
 const Message = require('../../infrastructure/models/message');
 const Conversation = require('../../infrastructure/models/conversation');
 const User = require('../../infrastructure/models/user');
+const Notification = require('../../infrastructure/models/notification');
+
+let io;
 
 function setupSocket(server) {
-  const io = new Server(server, { cors: { origin: '*' } });
+  io = new Server(server, { cors: { origin: '*' } });
 
   // authenticate sockets
   io.use((socket, next) => socketJwtMiddleware(socket, next));
@@ -13,6 +16,9 @@ function setupSocket(server) {
   io.on('connection', async (socket) => {
     const user = socket.user; // injected by middleware
     if (!user) return socket.disconnect(true);
+
+    // Join user-specific room for notifications
+    socket.join(String(user.id));
 
     // Mark user online
     await User.findByIdAndUpdate(user.id, { isOnline: true, lastSeenAt: new Date() });
@@ -39,6 +45,48 @@ function setupSocket(server) {
       if (payload.nonce) msgObj.nonce = payload.nonce;
 
       io.to(String(payload.conversationId)).emit('new_message', { message: msgObj });
+
+      // Send notification to other members
+      try {
+        const convo = await Conversation.findById(payload.conversationId);
+        if (convo && convo.members) {
+          const notifDocs = [];
+          convo.members.forEach(memberId => {
+            if (String(memberId) !== String(user.id)) {
+              let displayMsg = msgObj.text || '';
+              if (msgObj.type === 'image') displayMsg = '📷 ' + (msgObj.text || 'Hình ảnh');
+              else if (msgObj.type === 'file') displayMsg = '📁 ' + (msgObj.text || 'Tệp tin');
+              else if (msgObj.type === 'video') displayMsg = '🎥 ' + (msgObj.text || 'Video');
+              else if (msgObj.type === 'audio') displayMsg = '🎵 ' + (msgObj.text || 'Tin nhắn âm thanh');
+
+              notifDocs.push({
+                user: memberId,
+                type: 'message',
+                title: `Tin nhắn mới từ ${msgObj.sender.displayName || msgObj.sender.username}`,
+                message: displayMsg,
+                relatedId: payload.conversationId
+              });
+            }
+          });
+
+          if (notifDocs.length > 0) {
+            const savedNotifs = await Notification.insertMany(notifDocs);
+
+            // Thông báo thời gian thực cho từng người nhận
+            savedNotifs.forEach(n => {
+              io.to(String(n.user)).emit('message_notification', {
+                notification: n,
+                // Giữ lại các trường cũ để tương thích với Toast (nếu cần)
+                message: n.message,
+                senderName: msgObj.sender.displayName || msgObj.sender.username,
+                conversationId: payload.conversationId
+              });
+            });
+          }
+        }
+      } catch (err) {
+        console.error('Error sending notification:', err);
+      }
     });
 
     socket.on('disconnect', async () => {
@@ -50,4 +98,11 @@ function setupSocket(server) {
   return io;
 }
 
-module.exports = { setupSocket };
+function getIO() {
+  if (!io) {
+    throw new Error('Socket.io not initialized');
+  }
+  return io;
+}
+
+module.exports = { setupSocket, getIO };

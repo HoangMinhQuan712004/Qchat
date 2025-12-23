@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import axios from 'axios'
 import { useToast } from './Toast'
+import NotificationCenter from './NotificationCenter'
 
 export default function Sidebar({ token, user, onStartConversation, onSelectConversation, onOpenSettings, onOpenGroupModal, onGroupDeleted, onLogout }) {
   const [users, setUsers] = useState([])
@@ -242,9 +243,24 @@ export default function Sidebar({ token, user, onStartConversation, onSelectConv
     <div className="sidebar" style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: 0 }}>
       {/* Fixed Header */}
       <div style={{ padding: 16, paddingBottom: 0 }}>
-        <div className="sidebar-header">
+        <div className="sidebar-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <h4 style={{ margin: 0 }}>QChat</h4>
-          <button className="btn-icon" onClick={() => onOpenGroupModal?.()} title="Create Group">➕</button>
+          <div style={{ display: 'flex', gap: 5 }}>
+            <NotificationCenter token={token} user={user} onSelectNotification={(n) => {
+              if (n.relatedId) {
+                // If it's a message, we might want to select the conversation
+                // But we don't have the conversation object here fully.
+                // Ideally we fetch it or find it in `conversations`.
+                // For now, let's just toast or rely on user navigation, or implementing `onSelectConversation` if we had the object.
+                // Simple hack: if we have the conversation in our list, select it.
+                if (n.type === 'message') {
+                  const match = conversations.find(c => c._id === n.relatedId);
+                  if (match) onSelectConversation(match);
+                }
+              }
+            }} />
+            <button className="btn-icon" onClick={() => onOpenGroupModal?.()} title="Create Group">➕</button>
+          </div>
         </div>
 
         {/* Search Bar */}

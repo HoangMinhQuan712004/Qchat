@@ -63,29 +63,48 @@ function AppContent() {
     const onNewGlobal = ({ message }) => {
       const isMe = message.sender === user._id || message.sender?._id === user._id;
       if (!isMe && message.conversationId !== selectedConversation?._id) {
-        const senderName = message.sender?.displayName || message.sender?.username || 'Someone';
+        // We handle this via `message_notification` event now for toast consistency, 
+        // but if we want to keep the in-app popup logic here we can.
+        // For now, let's keep the browser notification part if needed, 
+        // but reliance on the specific `message_notification` event is better for the toast interaction.
+      }
+    };
 
-        // In-app popup
-        setNotification({
-          id: Date.now(),
-          message: `${senderName}: ${message.text}`,
-          sender: senderName
-        });
-        setTimeout(() => setNotification(null), 3000);
+    const onMessageNotification = ({ message, senderName, conversationId }) => {
+      // Only show if not in the conversation
+      if (selectedConversation?._id !== conversationId) {
+        addToast(`New message from ${senderName}: ${message}`, 'info', 4000);
 
-        // Browser Notification
+        // Browser Notification fallback
         if (Notification.permission === 'granted' && document.hidden) {
           new Notification(`New Message from ${senderName}`, {
-            body: message.text,
-            icon: '/vite.svg' // Placeholder icon
+            body: message,
+            icon: '/vite.svg'
           });
         }
       }
     };
 
+    const onWalletNotification = ({ message, type }) => {
+      addToast(message, type || 'success', 5000);
+      if (Notification.permission === 'granted' && document.hidden) {
+        new Notification('Wallet Update', {
+          body: message,
+          icon: '/vite.svg'
+        });
+      }
+    };
+
     s.on('new_message', onNewGlobal);
-    return () => s.off('new_message', onNewGlobal);
-  }, [token, user, selectedConversation]);
+    s.on('message_notification', onMessageNotification);
+    s.on('wallet_notification', onWalletNotification);
+
+    return () => {
+      s.off('new_message', onNewGlobal);
+      s.off('message_notification', onMessageNotification);
+      s.off('wallet_notification', onWalletNotification);
+    };
+  }, [token, user, selectedConversation, addToast]);
 
   // If token exists on load, try fetch current user
   React.useEffect(() => {

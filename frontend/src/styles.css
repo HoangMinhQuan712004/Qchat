@@ -1464,3 +1464,38 @@ margin-bottom: 16px;
   /* Add subtle glow */
   text-shadow: 0 0 20px rgba(74, 144, 226, 0.2);
 }
+
+/* Date Separator */
+.date-separator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 24px 0;
+  position: relative;
+}
+
+.date-separator::before {
+  content: "";
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  top: 50%;
+  height: 1px;
+  background: var(--border);
+  z-index: 1;
+  opacity: 0.2;
+}
+
+.date-separator span {
+  background: var(--bg-dark);
+  padding: 4px 16px;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--muted);
+  opacity: 0.7;
+  position: relative;
+  z-index: 2;
+  letter-spacing: 0.5px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}

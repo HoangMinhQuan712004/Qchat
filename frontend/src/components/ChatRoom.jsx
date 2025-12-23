@@ -9,10 +9,10 @@ export default function ChatRoom({ token, conversationId, user, searchQuery }) {
   const messagesStore = useChatStore(s => s.messages);
   const addMessage = useChatStore(s => s.addMessage);
 
-  // Filter messages based on search query
-  const messages = searchQuery
+  // Filter messages based on search query and sort ASC
+  const messages = (searchQuery
     ? messagesStore.filter(m => m.text?.toLowerCase().includes(searchQuery.toLowerCase()))
-    : messagesStore;
+    : messagesStore).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
 
   const prependMessages = useChatStore(s => s.prependMessages) || ((newMsgs) => useChatStore.setState(state => ({ messages: [...newMsgs, ...state.messages] }))); // Fallback if store doesn't have prepend
 
@@ -105,6 +105,7 @@ export default function ChatRoom({ token, conversationId, user, searchQuery }) {
     const s = getSocket();
     if (!s) return;
     const onNew = ({ message }) => {
+      console.log('Received message:', message);
       // only add if it belongs to this conversation
       if (message.conversationId === conversationId) {
         addMessage(message);
@@ -251,12 +252,14 @@ export default function ChatRoom({ token, conversationId, user, searchQuery }) {
     const optimisticMsg = {
       _id: 'temp-' + nonce,
       text: text,
+      type: 'text', // IMPORTANT: Fix empty bubble issue
       conversationId,
       sender: user,
       createdAt: new Date().toISOString(),
       isOptimistic: true,
       nonce: nonce
     };
+    console.log('Sending message:', optimisticMsg);
     addMessage(optimisticMsg);
     setText('');
 
@@ -294,6 +297,28 @@ export default function ChatRoom({ token, conversationId, user, searchQuery }) {
     return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }
 
+  function isSameDay(d1, d2) {
+    if (!d1 || !d2) return false;
+    const date1 = new Date(d1);
+    const date2 = new Date(d2);
+    return date1.getFullYear() === date2.getFullYear() &&
+      date1.getMonth() === date2.getMonth() &&
+      date1.getDate() === date2.getDate();
+  }
+
+  function isToday(createdAt) {
+    const d = new Date(createdAt);
+    const today = new Date();
+    return d.getFullYear() === today.getFullYear() &&
+      d.getMonth() === today.getMonth() &&
+      d.getDate() === today.getDate();
+  }
+
+  function formatDateSeparator(createdAt) {
+    const d = new Date(createdAt);
+    return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
+
   return (
     <div className="chat-room-container">
       <div className="messages-list" ref={scrollRef} onScroll={handleScroll} onWheel={handleWheel}>
@@ -304,6 +329,10 @@ export default function ChatRoom({ token, conversationId, user, searchQuery }) {
           </div>
         )}
         {messages.map((m, i) => {
+          const prevM = messages[i - 1];
+          const showDateSeparator = !prevM || !isSameDay(m.createdAt, prevM.createdAt);
+          const dateLabel = isToday(m.createdAt) ? null : formatDateSeparator(m.createdAt);
+
           // user (prop) is the current user object. user._id is the ID.
           // Normalize sender ID:
           const senderId = typeof m.sender === 'object' ? (m.sender?._id || m.sender?.id) : m.sender;
@@ -315,38 +344,44 @@ export default function ChatRoom({ token, conversationId, user, searchQuery }) {
           const isMe = String(senderId) === String(myId);
 
           // Show avatar if previous message was different sender OR is first message
-          const prevM = messages[i - 1];
           const prevSenderId = prevM ? (typeof prevM.sender === 'object' ? (prevM.sender?._id || prevM.sender?.id) : prevM.sender) : null;
           const showAvatar = !isMe && (i === 0 || String(prevSenderId) !== String(senderId));
 
           return (
-            <div key={m._id || i} className={`message-row ${isMe ? 'me' : 'other'}`}>
-              {!isMe && (
-                <div className="message-avatar" style={{ width: 40, marginRight: 8, flexShrink: 0 }}>
-                  {showAvatar ? (
-                    <div className="avatar small" style={{ width: 36, height: 36 }}>
-                      {(typeof m.sender === 'object' ? m.sender?.username : 'U').slice(0, 1).toUpperCase()}
-                    </div>
-                  ) : <div style={{ width: 36 }} />}
+            <React.Fragment key={m._id || i}>
+              {showDateSeparator && dateLabel && (
+                <div className="date-separator">
+                  <span>{dateLabel}</span>
                 </div>
               )}
-              <div className="message-bubble">
-                {!isMe && showAvatar && <div className="message-sender-name" style={{ fontSize: 10, opacity: 0.7, marginBottom: 4 }}>{typeof m.sender === 'object' ? (m.sender.displayName || m.sender.username) : 'User'}</div>}
-
-                {/* Content Render based on Type */}
-                {m.type === 'text' && <div className="message-text">{m.text}</div>}
-                {m.type === 'image' && m.attachments?.[0] && <img src={`http://localhost:4000${m.attachments[0].url}`} className="message-image" onClick={() => window.open(`http://localhost:4000${m.attachments[0].url}`, '_blank')} />}
-                {m.type === 'video' && m.attachments?.[0] && <video src={`http://localhost:4000${m.attachments[0].url}`} controls className="message-video" />}
-                {m.type === 'audio' && m.attachments?.[0] && <audio src={`http://localhost:4000${m.attachments[0].url}`} controls className="message-audio" />}
-                {m.type === 'file' && m.attachments?.[0] && (
-                  <a href={`http://localhost:4000${m.attachments[0].url}`} target="_blank" className="message-file-link">
-                    📄 {m.attachments[0].name || 'Attached File'}
-                  </a>
+              <div className={`message-row ${isMe ? 'me' : 'other'}`}>
+                {!isMe && (
+                  <div className="message-avatar" style={{ width: 40, marginRight: 8, flexShrink: 0 }}>
+                    {showAvatar ? (
+                      <div className="avatar small" style={{ width: 36, height: 36 }}>
+                        {(typeof m.sender === 'object' ? m.sender?.username : 'U').slice(0, 1).toUpperCase()}
+                      </div>
+                    ) : <div style={{ width: 36 }} />}
+                  </div>
                 )}
+                <div className="message-bubble">
+                  {!isMe && showAvatar && <div className="message-sender-name" style={{ fontSize: 10, opacity: 0.7, marginBottom: 4 }}>{typeof m.sender === 'object' ? (m.sender.displayName || m.sender.username) : 'User'}</div>}
 
-                <div className="message-time" style={{ fontSize: 9, opacity: 0.5, textAlign: 'right', marginTop: 4 }}>{formatTime(m.createdAt || new Date())}</div>
+                  {/* Content Render based on Type */}
+                  {m.type === 'text' && <div className="message-text">{m.text}</div>}
+                  {m.type === 'image' && m.attachments?.[0] && <img src={`http://localhost:4000${m.attachments[0].url}`} className="message-image" onClick={() => window.open(`http://localhost:4000${m.attachments[0].url}`, '_blank')} />}
+                  {m.type === 'video' && m.attachments?.[0] && <video src={`http://localhost:4000${m.attachments[0].url}`} controls className="message-video" />}
+                  {m.type === 'audio' && m.attachments?.[0] && <audio src={`http://localhost:4000${m.attachments[0].url}`} controls className="message-audio" />}
+                  {m.type === 'file' && m.attachments?.[0] && (
+                    <a href={`http://localhost:4000${m.attachments[0].url}`} target="_blank" className="message-file-link">
+                      📄 {m.attachments[0].name || 'Attached File'}
+                    </a>
+                  )}
+
+                  <div className="message-time" style={{ fontSize: 9, opacity: 0.5, textAlign: 'right', marginTop: 4 }}>{formatTime(m.createdAt || new Date())}</div>
+                </div>
               </div>
-            </div>
+            </React.Fragment>
           )
         })}
         {/* Typing Indicator */}

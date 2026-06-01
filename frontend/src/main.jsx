@@ -1,5 +1,6 @@
-import React from 'react'
+﻿import React from 'react'
 import { createRoot } from 'react-dom/client'
+import { API_URL } from './config'
 import ChatRoom from './components/ChatRoom'
 import Sidebar from './components/Sidebar'
 
@@ -17,8 +18,29 @@ import { ToastProvider, useToast } from './components/Toast'
 import MediaGallery from './components/MediaGallery'
 
 function AppContent() {
-  const [token, setToken] = useState(localStorage.getItem('token') || '')
-  const [user, setUser] = useState(null)
+  const [token, setToken] = useState(() => {
+    // Handle Google OAuth callback: ?token=xxx&user=xxx
+    const params = new URLSearchParams(window.location.search);
+    const urlToken = params.get('token');
+    if (urlToken) {
+      localStorage.setItem('token', urlToken);
+      window.history.replaceState({}, '', window.location.pathname);
+      return urlToken;
+    }
+    return localStorage.getItem('token') || '';
+  })
+  const [user, setUser] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const urlUser = params.get('user');
+    if (urlUser) {
+      try {
+        const u = JSON.parse(decodeURIComponent(urlUser));
+        if (u && u.id && !u._id) u._id = u.id;
+        return u;
+      } catch (e) { return null; }
+    }
+    return null;
+  })
   const [selectedConversation, setSelectedConversation] = useState(null) // now an object or null
   const [showSettings, setShowSettings] = useState(false)
   const [showGroupModal, setShowGroupModal] = useState(false)
@@ -111,7 +133,7 @@ function AppContent() {
     if (!token) return;
     // if user already set (from login) skip
     if (user) return;
-    fetch('http://localhost:4000/auth/me', { headers: { Authorization: 'Bearer ' + token } })
+    fetch(`${API_URL}/auth/me`, { headers: { Authorization: 'Bearer ' + token } })
       .then(r => {
         if (!r.ok) throw new Error('no')
         return r.json()
@@ -160,7 +182,7 @@ function AppContent() {
               selectedConversation={selectedConversation}
               onStartConversation={async (members) => {
                 try {
-                  const res = await fetch('http://localhost:4000/conversations', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify({ members }) })
+                  const res = await fetch(`${API_URL}/conversations`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify({ members }) })
                   const data = await res.json();
                   setSelectedConversation(data.conversation)
                 } catch (err) { console.error(err) }
@@ -254,7 +276,7 @@ function AppContent() {
             <div className="modal-body" style={{ padding: '16px 8px' }}>
               <div className="settings-item" onClick={async () => {
                 const isMuted = selectedConversation.mutedBy?.includes(user._id);
-                await fetch(`http://localhost:4000/conversations/${selectedConversation._id}/mute`, {
+                await fetch(`${API_URL}/conversations/${selectedConversation._id}/mute`, {
                   method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
                   body: JSON.stringify({ mute: !isMuted })
                 });
@@ -268,7 +290,7 @@ function AppContent() {
 
               <div className="settings-item" onClick={async () => {
                 if (!confirm('Are you sure you want to delete ALL messages in this chat?')) return;
-                await fetch(`http://localhost:4000/conversations/${selectedConversation._id}/messages`, { method: 'DELETE', headers: { Authorization: 'Bearer ' + token } });
+                await fetch(`${API_URL}/conversations/${selectedConversation._id}/messages`, { method: 'DELETE', headers: { Authorization: 'Bearer ' + token } });
                 addToast('Chat history cleared', 'success');
                 window.location.reload();
               }}>

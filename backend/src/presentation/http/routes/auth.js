@@ -1,12 +1,62 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const passport = require('passport');
+const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const User = require('../../../infrastructure/models/user');
 const { validate, schemas } = require('../../../infrastructure/middleware/validate');
 const { authLimiter } = require('../../../infrastructure/middleware/rateLimiter');
 
 const router = express.Router();
 const secret = process.env.JWT_SECRET || 'change_this_secret';
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+
+passport.use(new GoogleStrategy({
+  clientID: process.env.GOOGLE_CLIENT_ID,
+  clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+  callbackURL: process.env.GOOGLE_CALLBACK_URL || '/auth/google/callback',
+}, async (accessToken, refreshToken, profile, done) => {
+  try {
+    const email = profile.emails?.[0]?.value;
+    if (!email) return done(new Error('Không lấy được email từ Google'));
+
+    let user = await User.findOne({ googleId: profile.id });
+    if (!user) {
+      user = await User.findOne({ email });
+      if (user) {
+        user.googleId = profile.id;
+        if (!user.avatarUrl) user.avatarUrl = profile.photos?.[0]?.value;
+        await user.save();
+      } else {
+        const username = email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '_') + '_' + Math.floor(Math.random() * 1000);
+        user = await User.create({
+          googleId: profile.id,
+          email,
+          username,
+          displayName: profile.displayName || username,
+          avatarUrl: profile.photos?.[0]?.value,
+        });
+      }
+    }
+    done(null, user);
+  } catch (err) {
+    done(err);
+  }
+}));
+
+router.get('/google', authLimiter, passport.authenticate('google', { scope: ['profile', 'email'], session: false }));
+
+router.get('/google/callback',
+  passport.authenticate('google', { session: false, failureRedirect: `${FRONTEND_URL}?error=google_failed` }),
+  (req, res) => {
+    const user = req.user;
+    const token = jwt.sign({ id: user._id, username: user.username }, secret, { expiresIn: '7d' });
+    const userData = encodeURIComponent(JSON.stringify({
+      id: user._id, username: user.username, displayName: user.displayName, avatarUrl: user.avatarUrl
+    }));
+    res.redirect(`${FRONTEND_URL}?token=${token}&user=${userData}`);
+  }
+);
 
 router.post('/register', authLimiter, validate(schemas.register), async (req, res, next) => {
   try {

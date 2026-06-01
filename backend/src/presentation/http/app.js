@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const path = require('path');
+const passport = require('passport');
 const { apiLimiter } = require('../../infrastructure/middleware/rateLimiter');
 
 const authRoutes = require('./routes/auth');
@@ -31,6 +32,7 @@ function createApp() {
 
   app.use(express.json({ limit: '2mb' }));
   app.use(express.urlencoded({ extended: false, limit: '2mb' }));
+  app.use(passport.initialize());
 
   app.use('/uploads', express.static(path.join(__dirname, '../../../uploads')));
 

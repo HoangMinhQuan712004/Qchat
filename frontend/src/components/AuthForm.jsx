@@ -27,6 +27,10 @@ export default function AuthForm({ onAuth }){
     }
   }
 
+  function loginWithGoogle(){
+    window.location.href = `${API_URL}/auth/google`
+  }
+
   return (
     <div className="auth-card">
       <h2>{mode==='login' ? 'Login' : 'Register'}</h2>
@@ -41,6 +45,25 @@ export default function AuthForm({ onAuth }){
           <button type="button" className="btn ghost" onClick={()=>setMode(mode==='login'?'register':'login')}>{mode==='login' ? 'Switch to register' : 'Switch to login'}</button>
         </div>
       </form>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '16px 0' }}>
+        <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+        <span style={{ color: 'var(--muted)', fontSize: 13 }}>hoặc</span>
+        <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+      </div>
+
+      <button
+        type="button"
+        onClick={loginWithGoogle}
+        style={{
+          width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          gap: 10, padding: '10px 16px', borderRadius: 8, border: '1px solid var(--border)',
+          background: 'white', color: '#333', fontWeight: 600, fontSize: 15, cursor: 'pointer'
+        }}
+      >
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width={20} height={20} alt="Google" />
+        Đăng nhập bằng Google
+      </button>
     </div>
   )
 }

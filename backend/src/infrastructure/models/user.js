@@ -3,7 +3,8 @@ const { Schema, model } = require('mongoose');
 const UserSchema = new Schema({
   username: { type: String, required: true, unique: true, index: true },
   email: { type: String, required: true, unique: true, index: true },
-  passwordHash: { type: String, required: true },
+  passwordHash: { type: String },
+  googleId: { type: String, unique: true, sparse: true },
   displayName: { type: String },
   avatarUrl: { type: String },
   isOnline: { type: Boolean, default: false },

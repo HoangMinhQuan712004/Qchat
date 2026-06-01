@@ -1,11 +1,12 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
+import { API_URL } from '../config'
 
 export default function MediaGallery({ token, conversationId, onClose }) {
     const [images, setImages] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetch(`http://localhost:4000/messages/${conversationId}?limit=1000`, {
+        fetch(`${API_URL}/messages/${conversationId}?limit=1000`, {
             headers: { Authorization: 'Bearer ' + token }
         })
             .then(r => r.json())
@@ -16,7 +17,7 @@ export default function MediaGallery({ token, conversationId, onClose }) {
                     .filter(m => m.type === 'image' && m.attachments && m.attachments.length > 0)
                     .map(m => ({
                         _id: m._id,
-                        url: `http://localhost:4000${m.attachments[0].url}`,
+                        url: `${API_URL}${m.attachments[0].url}`,
                         sender: m.sender
                     }));
                 setImages(imgs);

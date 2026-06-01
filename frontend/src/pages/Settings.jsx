@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react'
+﻿import React, { useEffect, useState } from 'react'
+import { API_URL } from '../config'
 import axios from 'axios'
 import { useToast } from '../components/Toast'
 
@@ -36,7 +37,7 @@ export default function Settings({ onClose, user }) {
     try {
       const token = localStorage.getItem('token')
       if (token) {
-        const res = await fetch('http://localhost:4000/users/me', {
+        const res = await fetch(`${API_URL}/users/me`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
           body: JSON.stringify(profile)
@@ -201,7 +202,7 @@ function WalletTab({ user, addToast }) {
     const timer = setTimeout(async () => {
       try {
         const token = localStorage.getItem('token');
-        const res = await fetch(`http://localhost:4000/users?q=${toUsername}`, { headers: { Authorization: `Bearer ${token}` } });
+        const res = await fetch(`${API_URL}/users?q=${toUsername}`, { headers: { Authorization: `Bearer ${token}` } });
         const data = await res.json();
         const filtered = (data.users || []).filter(u => u._id !== user._id && u.username !== user.username);
         setSuggestions(filtered);
@@ -213,11 +214,11 @@ function WalletTab({ user, addToast }) {
   async function loadData() {
     const token = localStorage.getItem('token');
     try {
-      const meRes = await fetch('http://localhost:4000/auth/me', { headers: { Authorization: 'Bearer ' + token } });
+      const meRes = await fetch(`${API_URL}/auth/me`, { headers: { Authorization: 'Bearer ' + token } });
       const meData = await meRes.json();
       if (meData.user) setBalance(meData.user.balance || 0);
 
-      const histRes = await fetch('http://localhost:4000/wallet/history', { headers: { Authorization: 'Bearer ' + token } });
+      const histRes = await fetch(`${API_URL}/wallet/history`, { headers: { Authorization: 'Bearer ' + token } });
       const histData = await histRes.json();
       setHistory(histData.transactions || []);
     } catch (e) {
@@ -238,7 +239,7 @@ function WalletTab({ user, addToast }) {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:4000/wallet/transfer', {
+      const res = await fetch(`${API_URL}/wallet/transfer`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
         body: JSON.stringify({ toUsername: confirmModal.toUsername, amount: Number(confirmModal.amount) })
@@ -387,7 +388,7 @@ function BlockedUsersTab() {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    fetch('http://localhost:4000/friends/blocked', { headers: { Authorization: 'Bearer ' + token } })
+    fetch(`${API_URL}/friends/blocked`, { headers: { Authorization: 'Bearer ' + token } })
       .then(r => r.json())
       .then(d => {
         setBlocked(d.blocked || []);
@@ -400,7 +401,7 @@ function BlockedUsersTab() {
     if (!confirm('Unblock this user?')) return;
     try {
       const token = localStorage.getItem('token');
-      await fetch(`http://localhost:4000/friends/block/${id}`, { method: 'DELETE', headers: { Authorization: 'Bearer ' + token } });
+      await fetch(`${API_URL}/friends/block/${id}`, { method: 'DELETE', headers: { Authorization: 'Bearer ' + token } });
       setBlocked(prev => prev.filter(u => u._id !== id));
     } catch (e) { alert('Failed to unblock'); }
   }

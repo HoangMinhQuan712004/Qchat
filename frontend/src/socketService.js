@@ -1,10 +1,11 @@
+﻿import { API_URL } from './config';
 import { io } from 'socket.io-client';
 
 let socket = null;
 
 export function connectSocket(token, opts = {}){
   if(socket) return socket;
-  socket = io(opts.url || 'http://localhost:4000', { auth: { token } });
+  socket = io(opts.url || `${API_URL}`, { auth: { token } });
   return socket;
 }
 

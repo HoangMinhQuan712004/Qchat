@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react'
+﻿import React, { useState, useEffect } from 'react'
 import axios from 'axios'
+import { API_URL } from '../config'
 
 export default function CreateGroupModal({ token, onClose, onCreated }) {
   const [name, setName] = useState('')
@@ -9,7 +10,7 @@ export default function CreateGroupModal({ token, onClose, onCreated }) {
 
   useEffect(() => {
     // Fetch friends to select from
-    axios.get('http://localhost:4000/friends', { headers: { Authorization: 'Bearer ' + token } })
+    axios.get(`${API_URL}/friends`, { headers: { Authorization: 'Bearer ' + token } })
       .then(r => setFriends(r.data.friends))
       .catch(() => { })
   }, [token])
@@ -21,7 +22,7 @@ export default function CreateGroupModal({ token, onClose, onCreated }) {
     setLoading(true)
     try {
       const memberIds = Array.from(selectedFriends)
-      const res = await axios.post('http://localhost:4000/groups', { name, memberIds }, { headers: { Authorization: 'Bearer ' + token } })
+      const res = await axios.post(`${API_URL}/groups`, { name, memberIds }, { headers: { Authorization: 'Bearer ' + token } })
       onCreated(res.data.group)
       onClose()
     } catch (err) {

@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import axios from 'axios'
+import { API_URL } from '../config'
 
 export default function AuthForm({ onAuth }){
   const [mode, setMode] = useState('login')
@@ -13,10 +14,10 @@ export default function AuthForm({ onAuth }){
     setLoading(true)
     try{
       if(mode==='login'){
-        const res = await axios.post('http://localhost:4000/auth/login', { email, password })
+        const res = await axios.post(`${API_URL}/auth/login`, { email, password })
         onAuth(res.data.token, res.data.user)
       }else{
-        const res = await axios.post('http://localhost:4000/auth/register', { username, email, password })
+        const res = await axios.post(`${API_URL}/auth/register`, { username, email, password })
         onAuth(res.data.token, res.data.user)
       }
     }catch(err){

@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react'
+﻿import React, { useEffect, useState } from 'react'
+import { API_URL } from '../config'
 import axios from 'axios'
 import { useToast } from './Toast'
 import NotificationCenter from './NotificationCenter'
@@ -20,10 +21,10 @@ export default function Sidebar({ token, user, onStartConversation, onSelectConv
 
   useEffect(() => {
     if (!token) return;
-    axios.get('http://localhost:4000/users', { headers: { Authorization: 'Bearer ' + token } }).then(r => setUsers(r.data.users)).catch(() => { })
-    axios.get('http://localhost:4000/conversations', { headers: { Authorization: 'Bearer ' + token } }).then(r => setConversations(r.data.conversations)).catch(() => { })
-    axios.get('http://localhost:4000/friends', { headers: { Authorization: 'Bearer ' + token } }).then(r => setFriends(r.data.friends)).catch(() => { })
-    axios.get('http://localhost:4000/groups', { headers: { Authorization: 'Bearer ' + token } }).then(r => setGroups(r.data.groups)).catch(() => { })
+    axios.get(`${API_URL}/users`, { headers: { Authorization: 'Bearer ' + token } }).then(r => setUsers(r.data.users)).catch(() => { })
+    axios.get(`${API_URL}/conversations`, { headers: { Authorization: 'Bearer ' + token } }).then(r => setConversations(r.data.conversations)).catch(() => { })
+    axios.get(`${API_URL}/friends`, { headers: { Authorization: 'Bearer ' + token } }).then(r => setFriends(r.data.friends)).catch(() => { })
+    axios.get(`${API_URL}/groups`, { headers: { Authorization: 'Bearer ' + token } }).then(r => setGroups(r.data.groups)).catch(() => { })
   }, [token])
 
   useEffect(() => {
@@ -38,7 +39,7 @@ export default function Sidebar({ token, user, onStartConversation, onSelectConv
   async function performDeleteGroup() {
     if (!groupToDelete) return;
     try {
-      const res = await fetch(`http://localhost:4000/groups/${groupToDelete}`, {
+      const res = await fetch(`${API_URL}/groups/${groupToDelete}`, {
         method: 'DELETE',
         headers: { 'Authorization': 'Bearer ' + token }
       });
@@ -149,7 +150,7 @@ export default function Sidebar({ token, user, onStartConversation, onSelectConv
     if (!contextMenu || contextMenu.type !== 'friend') return;
     const user = contextMenu.data;
     try {
-      await fetch(`http://localhost:4000/friends/${user._id}`, { method: 'DELETE', headers: { Authorization: 'Bearer ' + token } });
+      await fetch(`${API_URL}/friends/${user._id}`, { method: 'DELETE', headers: { Authorization: 'Bearer ' + token } });
 
       // Remove from Friends list
       setFriends(prev => prev.filter(f => f._id !== user._id));
@@ -181,7 +182,7 @@ export default function Sidebar({ token, user, onStartConversation, onSelectConv
     try {
       // Assuming backend has /friends/block or we just unfriend for now if not ready?
       // We implemented /friends/block!
-      const res = await fetch(`http://localhost:4000/friends/block`, {
+      const res = await fetch(`${API_URL}/friends/block`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
         body: JSON.stringify({ userId: user._id })
@@ -216,7 +217,7 @@ export default function Sidebar({ token, user, onStartConversation, onSelectConv
 
   async function handleAddFriend(userToAdd) {
     try {
-      const res = await fetch('http://localhost:4000/friends', {
+      const res = await fetch(`${API_URL}/friends`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
         body: JSON.stringify({ userId: userToAdd._id })

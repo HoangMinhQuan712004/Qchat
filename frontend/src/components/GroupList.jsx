@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react'
+﻿import React, { useEffect, useState } from 'react'
+import { API_URL } from '../config'
 import axios from 'axios'
 
 export default function GroupList({ token, onSelectGroup }){
@@ -6,7 +7,7 @@ export default function GroupList({ token, onSelectGroup }){
 
   useEffect(()=>{
     if(!token) return;
-    axios.get('http://localhost:4000/groups', { headers: { Authorization: 'Bearer '+token } }).then(r=>setGroups(r.data.groups)).catch(()=>{})
+    axios.get(`${API_URL}/groups`, { headers: { Authorization: 'Bearer '+token } }).then(r=>setGroups(r.data.groups)).catch(()=>{})
   }, [token])
 
   return (

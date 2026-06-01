@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
+import { API_URL } from '../config'
 import { getSocket } from '../socketService';
 
 export default function NotificationCenter({ token, user, onSelectNotification }) {
@@ -10,7 +11,7 @@ export default function NotificationCenter({ token, user, onSelectNotification }
     // Fetch notifications
     const fetchNotifications = async () => {
         try {
-            const res = await fetch('http://localhost:4000/notifications', {
+            const res = await fetch(`${API_URL}/notifications`, {
                 headers: { Authorization: 'Bearer ' + token }
             });
             const data = await res.json();
@@ -59,7 +60,7 @@ export default function NotificationCenter({ token, user, onSelectNotification }
     }, []);
 
     const markAsRead = async (id) => {
-        await fetch(`http://localhost:4000/notifications/${id}/read`, {
+        await fetch(`${API_URL}/notifications/${id}/read`, {
             method: 'PUT', headers: { Authorization: 'Bearer ' + token }
         });
         setNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
@@ -114,7 +115,7 @@ export default function NotificationCenter({ token, user, onSelectNotification }
                         <button style={{ fontSize: '0.8em', background: 'rgba(88,101,242,0.1)', border: 'none', color: 'var(--accent)', cursor: 'pointer', padding: '4px 8px', borderRadius: 4 }}
                             onClick={async (e) => {
                                 e.stopPropagation();
-                                await fetch('http://localhost:4000/notifications/read-all', { method: 'PUT', headers: { Authorization: 'Bearer ' + token } });
+                                await fetch(`${API_URL}/notifications/read-all`, { method: 'PUT', headers: { Authorization: 'Bearer ' + token } });
                                 fetchNotifications();
                             }}
                         >

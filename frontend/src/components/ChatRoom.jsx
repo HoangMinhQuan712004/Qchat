@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react'
 import { getSocket } from '../socketService'
 import { useChatStore } from '../stores/useChatStore'
 import axios from 'axios'
+import { API_URL } from '../config'
 
 export default function ChatRoom({ token, conversationId, user, searchQuery }) {
   const [text, setText] = useState('');
@@ -35,7 +36,7 @@ export default function ChatRoom({ token, conversationId, user, searchQuery }) {
     try {
       const tokenHeader = token ? { headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'multipart/form-data' } } : {};
       // Upload
-      const res = await axios.post('http://localhost:4000/upload', formData, tokenHeader);
+      const res = await axios.post(`${API_URL}/upload`, formData, tokenHeader);
       const { url, mimetype, filename } = res.data;
 
       let type = 'file';
@@ -76,7 +77,7 @@ export default function ChatRoom({ token, conversationId, user, searchQuery }) {
 
         try {
           const tokenHeader = token ? { headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'multipart/form-data' } } : {};
-          const res = await axios.post('http://localhost:4000/upload', formData, tokenHeader);
+          const res = await axios.post(`${API_URL}/upload`, formData, tokenHeader);
           getSocket().emit('send_message', { conversationId, text: '', type: 'audio', attachments: [{ url: res.data.url, name: 'Voice Message' }] });
         } catch (e) { console.error(e); }
         stream.getTracks().forEach(t => t.stop());
@@ -148,7 +149,7 @@ export default function ChatRoom({ token, conversationId, user, searchQuery }) {
       try {
         const tokenHeader = token ? { headers: { Authorization: 'Bearer ' + token } } : {};
         // Load only 6 messages as requested
-        const res = await axios.get(`http://localhost:4000/messages/${conversationId}?limit=6`, tokenHeader);
+        const res = await axios.get(`${API_URL}/messages/${conversationId}?limit=6`, tokenHeader);
 
         useChatStore.setState({ messages: res.data.messages });
 
@@ -202,7 +203,7 @@ export default function ChatRoom({ token, conversationId, user, searchQuery }) {
       }
 
       const tokenHeader = token ? { headers: { Authorization: 'Bearer ' + token } } : {};
-      const res = await axios.get(`http://localhost:4000/messages/${conversationId}?limit=6&before=${firstMsg.createdAt}`, tokenHeader);
+      const res = await axios.get(`${API_URL}/messages/${conversationId}?limit=6&before=${firstMsg.createdAt}`, tokenHeader);
 
       const newMessages = res.data.messages;
       if (newMessages.length < 6) setHasMore(false);
@@ -274,7 +275,7 @@ export default function ChatRoom({ token, conversationId, user, searchQuery }) {
       s.emit('typing', { conversationId, isTyping: false });
     } else {
       try {
-        await axios.post('http://localhost:4000/messages', { conversationId, text }, { headers: { Authorization: 'Bearer ' + token } });
+        await axios.post(`${API_URL}/messages`, { conversationId, text }, { headers: { Authorization: 'Bearer ' + token } });
       } catch (e) { }
     }
   }
@@ -369,11 +370,11 @@ export default function ChatRoom({ token, conversationId, user, searchQuery }) {
 
                   {/* Content Render based on Type */}
                   {m.type === 'text' && <div className="message-text">{m.text}</div>}
-                  {m.type === 'image' && m.attachments?.[0] && <img src={`http://localhost:4000${m.attachments[0].url}`} className="message-image" onClick={() => window.open(`http://localhost:4000${m.attachments[0].url}`, '_blank')} />}
-                  {m.type === 'video' && m.attachments?.[0] && <video src={`http://localhost:4000${m.attachments[0].url}`} controls className="message-video" />}
-                  {m.type === 'audio' && m.attachments?.[0] && <audio src={`http://localhost:4000${m.attachments[0].url}`} controls className="message-audio" />}
+                  {m.type === 'image' && m.attachments?.[0] && <img src={`${API_URL}${m.attachments[0].url}`} className="message-image" onClick={() => window.open(`${API_URL}${m.attachments[0].url}`, '_blank')} />}
+                  {m.type === 'video' && m.attachments?.[0] && <video src={`${API_URL}${m.attachments[0].url}`} controls className="message-video" />}
+                  {m.type === 'audio' && m.attachments?.[0] && <audio src={`${API_URL}${m.attachments[0].url}`} controls className="message-audio" />}
                   {m.type === 'file' && m.attachments?.[0] && (
-                    <a href={`http://localhost:4000${m.attachments[0].url}`} target="_blank" className="message-file-link">
+                    <a href={`${API_URL}${m.attachments[0].url}`} target="_blank" className="message-file-link">
                       📄 {m.attachments[0].name || 'Attached File'}
                     </a>
                   )}

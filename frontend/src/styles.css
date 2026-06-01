@@ -401,9 +401,13 @@ img, video {
   position: relative;
   word-wrap: break-word;
   word-break: break-word;
-  
-
-.message-bubble { min-width: 60px; }
+  max-width: 75%;
+  min-width: 60px;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--transition-fast);
+  line-height: 1.5;
+  font-size: 0.9375rem;
+}
 
 .message-row.me .message-bubble {
   background: var(--accent);

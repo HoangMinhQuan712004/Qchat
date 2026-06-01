@@ -93,12 +93,14 @@ function setupSocket(server) {
           type: payload.type || 'text',
           text,
           attachments,
+          replyTo: payload.replyTo || null,
         });
 
         await Conversation.findByIdAndUpdate(payload.conversationId, { lastMessageAt: new Date() });
 
-        const populated = await msg.populate('sender', 'username displayName avatarUrl');
-        const msgObj = populated.toObject();
+        await msg.populate('sender', 'username displayName avatarUrl');
+        await msg.populate('replyTo', 'text sender type attachments');
+        const msgObj = msg.toObject();
         if (payload.nonce) msgObj.nonce = payload.nonce;
 
         io.to(String(payload.conversationId)).emit('new_message', { message: msgObj });

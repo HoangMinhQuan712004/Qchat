@@ -1,8 +1,10 @@
 import React, { useState } from 'react'
 import axios from 'axios'
 import { API_URL } from '../config'
+import { useToast } from './Toast'
 
 export default function AuthForm({ onAuth }){
+  const { addToast } = useToast()
   const [mode, setMode] = useState('login')
   const [email, setEmail] = useState('')
   const [username, setUsername] = useState('')
@@ -21,7 +23,7 @@ export default function AuthForm({ onAuth }){
         onAuth(res.data.token, res.data.user)
       }
     }catch(err){
-      alert(err.response?.data?.message || err.message)
+      addToast(err.response?.data?.message || err.message, 'error')
     }finally{
       setLoading(false)
     }

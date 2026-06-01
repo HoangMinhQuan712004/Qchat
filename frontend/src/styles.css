@@ -1,4 +1,4 @@
-/* ============================================================
+﻿/* ============================================================
    QCHAT — Global Stylesheet
    Organised sections:
    1. CSS Custom Properties (tokens)
@@ -1354,7 +1354,12 @@ img, video {
   cursor: pointer;
   border-left-width: 4px;
   transition: opacity var(--transition-fast);
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
+.toast-icon { font-size: 1rem; font-weight: 700; flex-shrink: 0; width: 20px; text-align: center; }
+.toast-message { flex: 1; min-width: 0; word-break: break-word; }
 
 .toast:hover {
   opacity: 0.92;

@@ -51,7 +51,7 @@ function AppContent() {
   const [isSearching, setIsSearching] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
 
-  const { addToast } = useToast();
+  const { addToast, showConfirm } = useToast();
 
   // Notification state
   const [notification, setNotification] = useState(null);
@@ -289,9 +289,10 @@ function AppContent() {
               </div>
 
               <div className="settings-item" onClick={async () => {
-                if (!confirm('Are you sure you want to delete ALL messages in this chat?')) return;
+                const ok = await showConfirm('Bạn có chắc muốn xóa toàn bộ tin nhắn trong cuộc trò chuyện này?', { title: 'Xóa lịch sử chat', confirmText: 'Xóa tất cả', danger: true });
+                if (!ok) return;
                 await fetch(`${API_URL}/conversations/${selectedConversation._id}/messages`, { method: 'DELETE', headers: { Authorization: 'Bearer ' + token } });
-                addToast('Chat history cleared', 'success');
+                addToast('Đã xóa toàn bộ tin nhắn', 'success');
                 window.location.reload();
               }}>
                 <span style={{ fontSize: '1.2rem', marginRight: 12, width: 24, textAlign: 'center', color: 'var(--danger)' }}>🗑️</span>

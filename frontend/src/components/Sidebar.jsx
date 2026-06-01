@@ -441,7 +441,7 @@ export default function Sidebar({ token, user, onStartConversation, onSelectConv
             </div>
           )}
           {contextMenu.type === 'group' && (
-            <div className="context-menu-item" onClick={() => { alert('Notifications muted'); setContextMenu(null); }}>
+            <div className="context-menu-item" onClick={() => { addToast('Đã tắt thông báo nhóm này', 'success'); setContextMenu(null); }}>
               🔕 Mute Notifications
             </div>
           )}

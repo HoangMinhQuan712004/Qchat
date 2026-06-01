@@ -41,6 +41,17 @@ router.get('/', expressJwt, async (req, res, next) => {
   }
 });
 
+// PUT /notifications/read-by-conversation/:conversationId
+router.put('/read-by-conversation/:conversationId', expressJwt, async (req, res, next) => {
+  try {
+    await Notification.updateMany(
+      { user: req.user.id, relatedId: req.params.conversationId, isRead: false },
+      { $set: { isRead: true } }
+    );
+    res.json({ ok: true });
+  } catch (err) { next(err); }
+});
+
 // PUT /notifications/read-all
 router.put('/read-all', expressJwt, async (req, res, next) => {
   try {

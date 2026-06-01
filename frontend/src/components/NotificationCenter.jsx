@@ -51,11 +51,13 @@ export default function NotificationCenter({ token, user, onSelectNotification }
     s.on('wallet_notification', handleNew);
     s.on('friend_request', handleFriendRequest);
     s.on('friend_accepted', handleFriendAccepted);
+    window.addEventListener('conversation_read', fetchNotifications);
     return () => {
       s.off('message_notification', handleNew);
       s.off('wallet_notification', handleNew);
       s.off('friend_request', handleFriendRequest);
       s.off('friend_accepted', handleFriendAccepted);
+      window.removeEventListener('conversation_read', fetchNotifications);
     };
   }, [token]);
 

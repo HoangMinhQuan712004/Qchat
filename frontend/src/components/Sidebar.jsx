@@ -4,7 +4,7 @@ import axios from 'axios'
 import { useToast } from './Toast'
 import NotificationCenter from './NotificationCenter'
 
-export default function Sidebar({ token, user, onStartConversation, onSelectConversation, onOpenSettings, onOpenGroupModal, onGroupDeleted, onLogout }) {
+export default function Sidebar({ token, user, onStartConversation, onSelectConversation, onOpenSettings, onOpenGroupModal, onGroupDeleted, onLogout, onGoHome }) {
   const [users, setUsers] = useState([])
   const [conversations, setConversations] = useState([])
   const [groups, setGroups] = useState([])
@@ -245,7 +245,7 @@ export default function Sidebar({ token, user, onStartConversation, onSelectConv
       {/* Fixed Header */}
       <div style={{ padding: 16, paddingBottom: 0 }}>
         <div className="sidebar-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <h4 style={{ margin: 0 }}>QChat</h4>
+          <h4 style={{ margin: 0, cursor: 'pointer', userSelect: 'none' }} onClick={onGoHome}>QChat</h4>
           <div style={{ display: 'flex', gap: 5 }}>
             <NotificationCenter token={token} user={user} onSelectNotification={(n) => {
               if (n.relatedId) {

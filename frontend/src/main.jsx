@@ -189,6 +189,7 @@ function AppContent() {
                 } catch (err) { console.error(err) }
               }}
               onSelectConversation={(conv) => setSelectedConversation(conv)}
+              onGoHome={() => setSelectedConversation(null)}
               onOpenSettings={() => setShowSettings(true)}
               onOpenGroupModal={() => setShowGroupModal(true)}
               onGroupDeleted={(gid) => {
@@ -231,6 +232,7 @@ function AppContent() {
                   <h2 className="chat-header">
                     {!isSearching ? (
                       <>
+                        <button className="btn-icon" onClick={() => setSelectedConversation(null)} title="Quay về trang chủ" style={{ marginRight: 4, fontSize: 18 }}>←</button>
                         <span style={{ opacity: 0.6, fontSize: '0.8em', marginRight: 8 }}>{selectedConversation.isGroup ? '#' : '@'}</span>
                         {getHeaderTitle()}
                         <div style={{ marginLeft: 'auto', position: 'relative' }}>

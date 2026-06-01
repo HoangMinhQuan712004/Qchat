@@ -201,9 +201,11 @@ export default function ChatRoom({ token, conversationId, user, searchQuery }) {
         const s = getSocket();
         if (s) s.emit('join_room', { conversationId });
 
-        // Mark as read
+        // Mark messages + notifications as read
         try {
           await axios.put(`${API_URL}/messages/${conversationId}/read`, {}, tokenHeader);
+          await axios.put(`${API_URL}/notifications/read-by-conversation/${conversationId}`, {}, tokenHeader);
+          window.dispatchEvent(new Event('conversation_read'));
         } catch (_) { /* non-critical */ }
 
         setTimeout(() => {
@@ -524,7 +526,7 @@ export default function ChatRoom({ token, conversationId, user, searchQuery }) {
                 )}
 
                 {/* Bubble + Actions wrapper */}
-                <div style={{ position: 'relative', maxWidth: '70%', display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start' }}>
+                <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start' }}>
 
                   {/* Action bar — shown on hover, above the bubble */}
                   {isHovered && !m.deleted && (

@@ -36,19 +36,20 @@ export default function Settings({ onClose, user }) {
     setSaving(true)
     try {
       const token = localStorage.getItem('token')
-      if (token) {
-        const res = await fetch(`${API_URL}/users/me`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
-          body: JSON.stringify(profile)
+      const res = await fetch(`${API_URL}/users/me`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+        body: JSON.stringify({
+          displayName: profile.displayName,
+          username: profile.username,
+          bio: profile.bio,
         })
-        if (!res.ok) throw new Error('save-failed')
-        addToast('Profile updated successfully', 'success')
-      } else {
-        addToast('Profile updated locally (no backend connection)', 'info')
-      }
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.message || 'Lưu thất bại')
+      addToast('Cập nhật hồ sơ thành công!', 'success')
     } catch (err) {
-      addToast('Unable to save to server. ' + err.message, 'error')
+      addToast(err.message, 'error')
     } finally {
       setSaving(false)
     }

@@ -11,6 +11,7 @@ const UserSchema = new Schema({
   lastSeenAt: { type: Date },
   friends: [{ type: Schema.Types.ObjectId, ref: 'User' }],
   blocked: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+  friendRequests: [{ from: { type: Schema.Types.ObjectId, ref: 'User' }, sentAt: { type: Date, default: Date.now } }],
   balance: { type: Number, default: 200000 }
 }, { timestamps: true });
 

@@ -38,4 +38,35 @@ router.get('/', expressJwt, async (req, res, next) => {
   }
 });
 
+// PUT /users/me — cập nhật profile
+router.put('/me', expressJwt, async (req, res, next) => {
+  try {
+    const { displayName, username, bio } = req.body;
+    const update = {};
+
+    if (displayName !== undefined) update.displayName = String(displayName).trim().slice(0, 50);
+    if (bio !== undefined) update.bio = String(bio).trim().slice(0, 200);
+
+    if (username !== undefined) {
+      const newUsername = String(username).trim().slice(0, 30);
+      if (!/^[a-zA-Z0-9_]+$/.test(newUsername)) {
+        return res.status(400).json({ message: 'Username chỉ được chứa chữ, số và dấu _' });
+      }
+      if (newUsername.length < 3) {
+        return res.status(400).json({ message: 'Username tối thiểu 3 ký tự' });
+      }
+      const existing = await User.findOne({ username: newUsername, _id: { $ne: req.user.id } }).lean();
+      if (existing) return res.status(409).json({ message: 'Username đã được sử dụng' });
+      update.username = newUsername;
+    }
+
+    const updated = await User.findByIdAndUpdate(req.user.id, update, { new: true })
+      .select('username displayName avatarUrl bio balance').lean();
+
+    res.json({ user: updated });
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;

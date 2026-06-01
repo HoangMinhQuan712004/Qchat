@@ -1,149 +1,158 @@
 ﻿import React, { useState, useEffect, useRef } from 'react';
-import { API_URL } from '../config'
 import { getSocket } from '../socketService';
+import { API_URL } from '../config';
+import { useToast } from './Toast';
 
 export default function NotificationCenter({ token, user, onSelectNotification }) {
-    const [notifications, setNotifications] = useState([]);
-    const [isOpen, setIsOpen] = useState(false);
-    const [unreadCount, setUnreadCount] = useState(0);
-    const containerRef = useRef(null);
+  const { addToast } = useToast();
+  const [notifications, setNotifications] = useState([]);
+  const [friendRequests, setFriendRequests] = useState([]);
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef(null);
+  const authHeader = { Authorization: 'Bearer ' + token };
 
-    // Fetch notifications
-    const fetchNotifications = async () => {
-        try {
-            const res = await fetch(`${API_URL}/notifications`, {
-                headers: { Authorization: 'Bearer ' + token }
-            });
-            const data = await res.json();
-            if (data.notifications) {
-                setNotifications(data.notifications);
-                setUnreadCount(data.notifications.filter(n => !n.isRead).length);
-            }
-        } catch (err) {
-            console.error('Fetch error:', err);
-        }
+  const fetchNotifications = async () => {
+    try {
+      const res = await fetch(`${API_URL}/notifications`, { headers: authHeader });
+      const data = await res.json();
+      if (data.notifications) setNotifications(data.notifications);
+    } catch (err) { console.error(err); }
+  };
+
+  const fetchFriendRequests = async () => {
+    try {
+      const res = await fetch(`${API_URL}/friends/requests`, { headers: authHeader });
+      const data = await res.json();
+      if (data.requests) setFriendRequests(data.requests);
+    } catch (err) { console.error(err); }
+  };
+
+  useEffect(() => {
+    if (!token) return;
+    fetchNotifications();
+    fetchFriendRequests();
+    const s = getSocket();
+    if (!s) return;
+    const handleNew = ({ notification }) => {
+      if (notification) setNotifications(prev => [notification, ...prev]);
+      else fetchNotifications();
     };
-
-    useEffect(() => {
-        if (token) fetchNotifications();
-
-        const s = getSocket();
-        if (!s) return;
-
-        const handleNew = ({ notification }) => {
-            if (notification) {
-                setNotifications(prev => [notification, ...prev]);
-                setUnreadCount(prev => prev + 1);
-            } else {
-                fetchNotifications();
-            }
-        };
-
-        s.on('message_notification', handleNew);
-        s.on('wallet_notification', handleNew);
-
-        return () => {
-            s.off('message_notification', handleNew);
-            s.off('wallet_notification', handleNew);
-        };
-    }, [token]);
-
-    // Close on click outside
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (containerRef.current && !containerRef.current.contains(event.target)) {
-                setIsOpen(false);
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
-
-    const markAsRead = async (id) => {
-        await fetch(`${API_URL}/notifications/${id}/read`, {
-            method: 'PUT', headers: { Authorization: 'Bearer ' + token }
-        });
-        setNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
-        setUnreadCount(prev => Math.max(0, prev - 1));
+    const handleFriendRequest = ({ from }) => {
+      setFriendRequests(prev => {
+        if (prev.some(r => String(r.from?._id || r.from) === String(from._id))) return prev;
+        return [{ from, sentAt: new Date() }, ...prev];
+      });
+      addToast(`${from.displayName || from.username} muon ket ban voi ban!`, 'info', 6000);
     };
-
-    const handleItemClick = (notif) => {
-        if (!notif.isRead) markAsRead(notif._id);
-        if (onSelectNotification) onSelectNotification(notif);
-        setIsOpen(false);
+    const handleFriendAccepted = ({ by }) => {
+      addToast(`${by.displayName || by.username} da chap nhan loi moi ket ban!`, 'success', 5000);
     };
+    s.on('message_notification', handleNew);
+    s.on('wallet_notification', handleNew);
+    s.on('friend_request', handleFriendRequest);
+    s.on('friend_accepted', handleFriendAccepted);
+    return () => {
+      s.off('message_notification', handleNew);
+      s.off('wallet_notification', handleNew);
+      s.off('friend_request', handleFriendRequest);
+      s.off('friend_accepted', handleFriendAccepted);
+    };
+  }, [token]);
 
-    return (
-        <div className="notif-center" ref={containerRef} style={{ position: 'relative' }}>
-            <button className="btn-icon" onClick={() => setIsOpen(!isOpen)} style={{
-                position: 'relative',
-                background: 'rgba(255,255,255,0.05)',
-                borderRadius: '50%',
-                width: 36,
-                height: 36,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '20px',
-                border: isOpen ? '1px solid var(--accent)' : '1px solid transparent'
-            }}>
-                🔔
-                {unreadCount > 0 && (
-                    <span style={{
-                        position: 'absolute', top: -2, right: -2,
-                        background: 'var(--accent)', color: 'white', borderRadius: '50%',
-                        fontSize: '10px', minWidth: 18, height: 18, display: 'flex',
-                        alignItems: 'center', justifyContent: 'center', fontWeight: 'bold',
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.3)', border: '2px solid var(--bg-panel)'
-                    }}>
-                        {unreadCount}
-                    </span>
-                )}
-            </button>
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) setIsOpen(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
-            {isOpen && (
-                <div className="notif-dropdown" style={{
-                    position: 'absolute', top: 'calc(100% + 10px)', left: 0,
-                    width: 320, maxHeight: 450, overflowY: 'auto',
-                    background: 'var(--bg-panel)', border: '1px solid var(--border)',
-                    borderRadius: 12, boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
-                    zIndex: 9999, display: 'flex', flexDirection: 'column',
-                    animation: 'slideUp 0.2s ease-out'
-                }}>
-                    <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, background: 'var(--bg-panel)', zIndex: 1 }}>
-                        <span style={{ fontWeight: 'bold' }}>Notifications</span>
-                        <button style={{ fontSize: '0.8em', background: 'rgba(88,101,242,0.1)', border: 'none', color: 'var(--accent)', cursor: 'pointer', padding: '4px 8px', borderRadius: 4 }}
-                            onClick={async (e) => {
-                                e.stopPropagation();
-                                await fetch(`${API_URL}/notifications/read-all`, { method: 'PUT', headers: { Authorization: 'Bearer ' + token } });
-                                fetchNotifications();
-                            }}
-                        >
-                            Mark all read
-                        </button>
+  const unreadCount = notifications.filter(n => !n.isRead).length + friendRequests.length;
+
+  const markAsRead = async (id) => {
+    await fetch(`${API_URL}/notifications/${id}/read`, { method: 'PUT', headers: authHeader });
+    setNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
+  };
+
+  const acceptRequest = async (fromId) => {
+    try {
+      await fetch(`${API_URL}/friends/requests/${fromId}/accept`, { method: 'POST', headers: authHeader });
+      setFriendRequests(prev => prev.filter(r => String(r.from?._id || r.from) !== String(fromId)));
+      addToast('Da chap nhan loi moi ket ban!', 'success');
+    } catch { addToast('Co loi xay ra', 'error'); }
+  };
+
+  const declineRequest = async (fromId) => {
+    try {
+      await fetch(`${API_URL}/friends/requests/${fromId}/decline`, { method: 'POST', headers: authHeader });
+      setFriendRequests(prev => prev.filter(r => String(r.from?._id || r.from) !== String(fromId)));
+      addToast('Da tu choi loi moi', 'info');
+    } catch { addToast('Co loi xay ra', 'error'); }
+  };
+
+  return (
+    <div className="notif-center" ref={containerRef} style={{ position: 'relative' }}>
+      <button className="btn-icon" onClick={() => setIsOpen(!isOpen)} style={{ position: 'relative', borderRadius: '50%', width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', background: isOpen ? 'rgba(88,101,242,0.15)' : 'rgba(255,255,255,0.05)', border: isOpen ? '1px solid var(--accent)' : '1px solid transparent' }}>
+        🔔
+        {unreadCount > 0 && (
+          <span style={{ position: 'absolute', top: -2, right: -2, background: 'var(--danger)', color: 'white', borderRadius: '50%', fontSize: '10px', minWidth: 18, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', border: '2px solid var(--bg-panel)' }}>
+            {unreadCount > 99 ? '99+' : unreadCount}
+          </span>
+        )}
+      </button>
+
+      {isOpen && (
+        <div style={{ position: 'fixed', top: 60, left: 270, width: 340, maxHeight: '70vh', overflowY: 'auto', background: 'var(--bg-panel)', border: '1px solid var(--border)', borderRadius: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.5)', zIndex: 9999 }} className="custom-scroll">
+          <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, background: 'var(--bg-panel)', zIndex: 1 }}>
+            <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>Thong bao</span>
+            <button onClick={async () => { await fetch(`${API_URL}/notifications/read-all`, { method: 'PUT', headers: authHeader }); fetchNotifications(); }} style={{ fontSize: '0.75rem', background: 'rgba(88,101,242,0.1)', border: 'none', color: 'var(--accent)', cursor: 'pointer', padding: '4px 8px', borderRadius: 4 }}>Doc tat ca</button>
+          </div>
+
+          {friendRequests.length > 0 && (
+            <div>
+              <div style={{ padding: '8px 16px 4px', fontSize: '0.72rem', fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Loi moi ket ban ({friendRequests.length})
+              </div>
+              {friendRequests.map((req, i) => {
+                const from = req.from;
+                const fromId = from?._id || from;
+                const name = from?.displayName || from?.username || 'Nguoi dung';
+                return (
+                  <div key={i} style={{ padding: '10px 16px', borderBottom: '1px solid var(--border)', background: 'rgba(88,101,242,0.05)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                      <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg,var(--accent),#7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, flexShrink: 0, fontSize: 15 }}>
+                        {name.slice(0, 1).toUpperCase()}
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{name}</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>muon ket ban voi ban</div>
+                      </div>
                     </div>
-                    <div className="custom-scroll" style={{ overflowY: 'auto' }}>
-                        {notifications.length === 0 ? (
-                            <div style={{ padding: 32, textAlign: 'center', opacity: 0.6 }}>
-                                <div style={{ fontSize: 32, marginBottom: 8 }}>📭</div>
-                                <div>No notifications yet</div>
-                            </div>
-                        ) : (
-                            notifications.map(n => (
-                                <div key={n._id} onClick={() => handleItemClick(n)} style={{
-                                    padding: '12px 16px', borderBottom: '1px solid var(--border)',
-                                    cursor: 'pointer', background: n.isRead ? 'transparent' : 'rgba(88,101,242,0.05)',
-                                    transition: 'background 0.2s'
-                                }} className="notif-item">
-                                    <div style={{ fontSize: '0.9rem', fontWeight: n.isRead ? 400 : 700, color: n.isRead ? 'var(--muted)' : 'var(--text)' }}>{n.title}</div>
-                                    <div style={{ fontSize: '0.85rem', opacity: 0.8, marginTop: 4, lineBreak: 'anywhere' }}>{n.message}</div>
-                                    <div style={{ fontSize: '0.7rem', opacity: 0.5, marginTop: 6 }}>{new Date(n.createdAt).toLocaleString()}</div>
-                                </div>
-                            ))
-                        )}
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button onClick={() => acceptRequest(fromId)} style={{ flex: 1, padding: '6px', borderRadius: 6, border: 'none', background: 'var(--accent)', color: 'white', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem' }}>Chap nhan</button>
+                      <button onClick={() => declineRequest(fromId)} style={{ flex: 1, padding: '6px', borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--muted)', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem' }}>Tu choi</button>
                     </div>
-                </div>
-            )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {notifications.length === 0 && friendRequests.length === 0 && (
+            <div style={{ padding: 32, textAlign: 'center', opacity: 0.5 }}>
+              <div style={{ fontSize: 32, marginBottom: 8 }}>📭</div>
+              <div style={{ fontSize: '0.85rem' }}>Chua co thong bao</div>
+            </div>
+          )}
+          {notifications.map(n => (
+            <div key={n._id} onClick={() => { if (!n.isRead) markAsRead(n._id); if (onSelectNotification) onSelectNotification(n); setIsOpen(false); }} style={{ padding: '10px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer', background: n.isRead ? 'transparent' : 'rgba(88,101,242,0.05)' }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'} onMouseLeave={e => e.currentTarget.style.background = n.isRead ? 'transparent' : 'rgba(88,101,242,0.05)'}>
+              <div style={{ fontSize: '0.85rem', fontWeight: n.isRead ? 400 : 600 }}>{n.title}</div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--muted)', marginTop: 2 }}>{n.message}</div>
+              <div style={{ fontSize: '0.7rem', color: 'var(--muted)', marginTop: 4, opacity: 0.6 }}>{new Date(n.createdAt).toLocaleString('vi-VN')}</div>
+            </div>
+          ))}
         </div>
-    );
+      )}
+    </div>
+  );
 }

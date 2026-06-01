@@ -16,6 +16,7 @@ import Homepage from './components/Homepage'
 import { connectSocket, disconnectSocket, getSocket } from './socketService'
 import { ToastProvider, useToast } from './components/Toast'
 import MediaGallery from './components/MediaGallery'
+import NewsWidget from './components/NewsWidget'
 
 function AppContent() {
   const [token, setToken] = useState(() => {
@@ -222,7 +223,7 @@ function AppContent() {
               {!selectedConversation ? (
                 <Homepage
                   user={user}
-                  onStartConversation={() => alert('Select a friend or create a group from the sidebar to start chatting!')}
+                  onStartConversation={() => addToast('Chọn bạn bè hoặc tạo nhóm từ sidebar để bắt đầu chat!', 'info')}
                   onOpenSettings={() => setShowSettings(true)}
                 />
               ) : (
@@ -326,6 +327,8 @@ function AppContent() {
           onClose={() => setShowMediaGallery(false)}
         />
       )}
+
+      {!selectedConversation && !showSettings && <NewsWidget />}
 
       {
         showGroupModal && (

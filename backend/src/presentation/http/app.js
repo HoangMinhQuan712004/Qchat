@@ -14,6 +14,7 @@ const groupsRoutes = require('./routes/groups');
 const uploadRoutes = require('./routes/upload');
 const walletRoutes = require('./routes/wallet');
 const notificationsRoutes = require('./routes/notifications');
+const newsRoutes = require('./routes/news');
 
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173,http://localhost:3000').split(',');
 
@@ -47,6 +48,7 @@ function createApp() {
   app.use('/upload', uploadRoutes);
   app.use('/wallet', walletRoutes);
   app.use('/notifications', notificationsRoutes);
+  app.use('/news', newsRoutes);
 
   app.get('/', (req, res) => res.json({ ok: true }));
 

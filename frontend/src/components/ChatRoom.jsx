@@ -1,12 +1,14 @@
-import React, { useEffect, useState, useRef } from 'react'
+﻿import React, { useEffect, useState, useRef } from 'react'
 import { getSocket } from '../socketService'
 import { useChatStore } from '../stores/useChatStore'
 import axios from 'axios'
 import { API_URL } from '../config'
+import { useToast } from './Toast'
 
 const QUICK_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '😡'];
 
 export default function ChatRoom({ token, conversationId, user, searchQuery }) {
+  const { addToast, showConfirm } = useToast()
   const [text, setText] = useState('');
   const [typingUsers, setTypingUsers] = useState(new Set());
   const messagesStore = useChatStore(s => s.messages);
@@ -64,7 +66,7 @@ export default function ChatRoom({ token, conversationId, user, searchQuery }) {
       }
     } catch (err) {
       console.error(err);
-      alert('Upload failed');
+      addToast('Upload thất bại', 'error');
     }
     e.target.value = null;
   };
@@ -94,7 +96,7 @@ export default function ChatRoom({ token, conversationId, user, searchQuery }) {
       setIsRecording(true);
     } catch (err) {
       console.error(err);
-      alert('Mic access denied');
+      addToast('Không có quyền truy cập microphone', 'error');
     }
   };
 
@@ -286,7 +288,7 @@ export default function ChatRoom({ token, conversationId, user, searchQuery }) {
   async function handleSend(e) {
     if (e) e.preventDefault();
     if (!text.trim()) return;
-    if (!conversationId) return alert('Select a conversation');
+    if (!conversationId) return addToast('Chọn một cuộc trò chuyện trước', 'warning');
 
     // Handle edit mode
     if (editingMsgId) {
@@ -300,7 +302,7 @@ export default function ChatRoom({ token, conversationId, user, searchQuery }) {
         }));
       } catch (err) {
         console.error('Edit failed', err);
-        alert('Failed to edit message');
+        addToast('Không thể chỉnh sửa tin nhắn', 'error');
       }
       setEditingMsgId(null);
       setText('');
@@ -387,7 +389,8 @@ export default function ChatRoom({ token, conversationId, user, searchQuery }) {
 
   // ── Delete message ────────────────────────────────────────────────────────
   const handleDelete = async (msgId) => {
-    if (!window.confirm('Delete this message?')) return;
+    const ok = await showConfirm('Xóa tin nhắn này?', { confirmText: 'Xóa', danger: true });
+    if (!ok) return;
     try {
       const tokenHeader = token ? { headers: { Authorization: 'Bearer ' + token } } : {};
       await axios.delete(`${API_URL}/messages/${msgId}`, tokenHeader);
@@ -398,7 +401,7 @@ export default function ChatRoom({ token, conversationId, user, searchQuery }) {
       }));
     } catch (err) {
       console.error('Delete failed', err);
-      alert('Failed to delete message');
+      addToast('Không thể xóa tin nhắn', 'error');
     }
   };
 

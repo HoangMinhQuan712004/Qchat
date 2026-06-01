@@ -4,7 +4,7 @@ import axios from 'axios'
 import { useToast } from '../components/Toast'
 
 export default function Settings({ onClose, user }) {
-  const { addToast } = useToast();
+  const { addToast, showConfirm } = useToast();
   const [theme, setTheme] = useState(() => {
     try { return localStorage.getItem('qchat_theme') || 'dark' } catch (e) { return 'dark' }
   })
@@ -398,12 +398,13 @@ function BlockedUsersTab() {
   }, []);
 
   async function handleUnblock(id) {
-    if (!confirm('Unblock this user?')) return;
+    const ok = await showConfirm('Bạn có muốn bỏ chặn người dùng này?', { confirmText: 'Bỏ chặn' });
+    if (!ok) return;
     try {
       const token = localStorage.getItem('token');
       await fetch(`${API_URL}/friends/block/${id}`, { method: 'DELETE', headers: { Authorization: 'Bearer ' + token } });
       setBlocked(prev => prev.filter(u => u._id !== id));
-    } catch (e) { alert('Failed to unblock'); }
+    } catch (e) { addToast('Không thể bỏ chặn', 'error'); }
   }
 
   if (loading) return <div>Loading...</div>;

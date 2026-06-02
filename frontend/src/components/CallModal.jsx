@@ -25,17 +25,23 @@ export default function CallModal({ user, incomingCall, onClose }) {
   const pendingSdpRef = useRef(null)
   const pendingCandidatesRef = useRef([])
 
-  // Show incoming call UI when incomingCall prop is set
+  // Show incoming or outgoing call when prop is set
   useEffect(() => {
-    if (incomingCall && callState === 'idle') {
-      setActiveCall({
-        callId: incomingCall.callId,
-        callType: incomingCall.callType,
-        targetId: incomingCall.caller.id,
-        targetName: incomingCall.caller.displayName,
-        isIncoming: true,
-      })
-      setCallState('ringing')
+    if (!incomingCall || callState !== 'idle') return
+    const isOutgoing = !!incomingCall.isOutgoing
+    const targetId = isOutgoing ? incomingCall.targetId : incomingCall.caller?.id
+    const targetName = isOutgoing ? incomingCall.caller?.displayName : incomingCall.caller?.displayName
+    setActiveCall({
+      callId: incomingCall.callId,
+      callType: incomingCall.callType || 'voice',
+      targetId,
+      targetName,
+      isIncoming: !isOutgoing,
+    })
+    setCallState('ringing')
+    // Auto-start outgoing call
+    if (isOutgoing && targetId) {
+      startOutgoingCall(incomingCall.callId, incomingCall.callType || 'voice', targetId)
     }
   }, [incomingCall])
 
@@ -148,17 +154,11 @@ export default function CallModal({ user, incomingCall, onClose }) {
     return pc
   }
 
-  // Initiate outgoing call
-  async function startCall(targetId, targetName, callType = 'voice') {
-    const callId = 'call-' + Date.now()
-    setActiveCall({ callId, callType, targetId, targetName, isIncoming: false })
-    setCallState('ringing')
-
+  // Initiate outgoing call (called from useEffect when isOutgoing)
+  async function startOutgoingCall(callId, callType, targetId) {
     const pc = await setupPeerConnection(callType, targetId, callId)
-
     const offer = await pc.createOffer()
     await pc.setLocalDescription(offer)
-
     const s = getSocket()
     s?.emit('call_request', { targetUserId: targetId, callType, callId })
     s?.emit('call_offer', { callId, targetUserId: targetId, sdp: offer })

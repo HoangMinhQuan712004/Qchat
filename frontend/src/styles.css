@@ -377,6 +377,7 @@ img, video { display: block; max-width: 100%; }
   height: 1px;
   background: linear-gradient(90deg, transparent 0%, var(--accent) 50%, transparent 100%);
   opacity: 0.3;
+  pointer-events: none;
 }
 
 /* Messages list */

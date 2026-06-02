@@ -55,8 +55,8 @@ function AppContent() {
   const [isSearching, setIsSearching] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [showGroupInfo, setShowGroupInfo] = useState(false)
-  const [incomingCall, setIncomingCall] = useState(null)
-  const callModalRef = React.useRef(null)
+  const [incomingCall, setIncomingCall] = useState(null)   // { callId, callType, caller }
+  const [outgoingCall, setOutgoingCall] = useState(null)   // { targetId, targetName, callType }
 
   const { addToast, showConfirm } = useToast();
 
@@ -173,13 +173,18 @@ function AppContent() {
     return <AuthPage onAuth={onAuth} />
   }
 
-  // Helper to get title from selectedConversation object
   function getHeaderTitle() {
     if (!selectedConversation) return 'Chat';
     if (selectedConversation.isGroup) return selectedConversation.title || 'Group Chat';
-    // 1-1
-    const other = selectedConversation.members?.find(m => m._id !== user?._id);
-    return other?.displayName || other?.username || 'Chat';
+    const myId = String(user?._id || user?.id || '')
+    const other = selectedConversation.members?.find(m => String(m._id || m) !== myId)
+    return other?.displayName || other?.username || selectedConversation.title || 'Chat'
+  }
+
+  function getOtherUserId() {
+    const myId = String(user?._id || user?.id || '')
+    const other = selectedConversation?.members?.find(m => String(m._id || m) !== myId)
+    return other?._id ? String(other._id) : (typeof other === 'string' ? other : null)
   }
 
   return (
@@ -252,27 +257,28 @@ function AppContent() {
                           <div style={{ fontWeight: 700, fontSize: '0.95rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{getHeaderTitle()}</div>
                           {selectedConversation.isGroup && <div style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>Group</div>}
                         </div>
-                        <div style={{ marginLeft: 'auto', display: 'flex', gap: 2 }}>
-                          <button className="btn-icon" onClick={() => setIsSearching(true)} title="Search messages"><IconSearch size={17} /></button>
+                        <div style={{ marginLeft: 'auto', display: 'flex', gap: 4, alignItems: 'center' }}>
+                          <button className="btn-icon" onClick={() => setIsSearching(true)} title="Tìm kiếm"><IconSearch size={17} /></button>
                           {!selectedConversation.isGroup && (
                             <>
                               <button className="btn-icon" title="Gọi thoại" onClick={() => {
-                                const otherId = (selectedConversation.members || []).find(m => String(m) !== String(user?._id))
-                                const otherName = selectedConversation.title || 'User'
-                                setIncomingCall(null)
-                                // Trigger outgoing call via ref
-                                if (callModalRef.current?.startCall) callModalRef.current.startCall(otherId, otherName, 'voice')
-                              }}><IconPhone size={16} /></button>
+                                const tid = getOtherUserId(); if (!tid) return addToast('Không tìm được người nhận', 'error');
+                                setOutgoingCall({ callId: 'call-' + String(Math.random()).slice(2), targetId: tid, targetName: getHeaderTitle(), callType: 'voice' })
+                              }}>
+                                <IconPhone size={16} />
+                              </button>
                               <button className="btn-icon" title="Gọi video" onClick={() => {
-                                const otherId = (selectedConversation.members || []).find(m => String(m) !== String(user?._id))
-                                const otherName = selectedConversation.title || 'User'
-                                setIncomingCall(null)
-                                if (callModalRef.current?.startCall) callModalRef.current.startCall(otherId, otherName, 'video')
-                              }}><IconVideo size={16} /></button>
+                                const tid = getOtherUserId(); if (!tid) return addToast('Không tìm được người nhận', 'error');
+                                setOutgoingCall({ callId: 'call-' + String(Math.random()).slice(2), targetId: tid, targetName: getHeaderTitle(), callType: 'video' })
+                              }}>
+                                <IconVideo size={16} />
+                              </button>
                             </>
                           )}
                           {selectedConversation.isGroup && (
-                            <button className="btn-icon" title="Thành viên nhóm" onClick={() => setShowGroupInfo(v => !v)} style={{ color: showGroupInfo ? 'var(--accent)' : undefined }}><IconUsers size={16} /></button>
+                            <button className="btn-icon" title="Thành viên nhóm" onClick={() => setShowGroupInfo(v => !v)} style={{ color: showGroupInfo ? 'var(--accent)' : 'var(--muted)' }}>
+                              <IconUsers size={16} />
+                            </button>
                           )}
                         </div>
                       </>
@@ -383,13 +389,20 @@ function AppContent() {
 
       {!selectedConversation && !showSettings && <NewsWidget />}
 
-      {/* Call Modal — always mounted to catch incoming calls */}
-      <CallModalWrapper
-        ref={callModalRef}
-        user={user}
-        incomingCall={incomingCall}
-        onClose={() => setIncomingCall(null)}
-      />
+      {/* Call Modal */}
+      {(incomingCall || outgoingCall) && (
+        <CallModal
+          user={user}
+          incomingCall={incomingCall || (outgoingCall ? {
+            callId: outgoingCall.callId,
+            callType: outgoingCall.callType,
+            caller: { id: outgoingCall.targetId, displayName: outgoingCall.targetName },
+            isOutgoing: true,
+            targetId: outgoingCall.targetId,
+          } : null)}
+          onClose={() => { setIncomingCall(null); setOutgoingCall(null); }}
+        />
+      )}
 
       {
         showGroupModal && (
@@ -406,50 +419,6 @@ function AppContent() {
     </div >
   )
 }
-
-// Wrapper that exposes startCall imperatively
-const CallModalWrapper = React.forwardRef(function CallModalWrapper({ user, incomingCall, onClose }, ref) {
-  const callRef = React.useRef(null)
-
-  React.useImperativeHandle(ref, () => ({
-    startCall: (targetId, targetName, callType) => {
-      if (callRef.current) callRef.current.startCall?.(targetId, targetName, callType)
-    }
-  }))
-
-  return <CallModalInner ref={callRef} user={user} incomingCall={incomingCall} onClose={onClose} />
-})
-
-const CallModalInner = React.forwardRef(function CallModalInner(props, ref) {
-  const [activeCall, setActiveCall] = React.useState(null)
-  const [incomingCallState, setIncomingCallState] = React.useState(null)
-
-  React.useEffect(() => {
-    if (props.incomingCall) setIncomingCallState(props.incomingCall)
-  }, [props.incomingCall])
-
-  React.useImperativeHandle(ref, () => ({
-    startCall: (targetId, targetName, callType) => {
-      setActiveCall({ targetId, targetName, callType, isOutgoing: true })
-    }
-  }))
-
-  const effectiveCall = activeCall ? { ...activeCall, callId: 'out-' + Date.now(), caller: props.user } : incomingCallState
-
-  if (!effectiveCall && !activeCall) return null
-
-  return (
-    <CallModal
-      user={props.user}
-      incomingCall={effectiveCall}
-      onClose={() => {
-        setActiveCall(null)
-        setIncomingCallState(null)
-        props.onClose?.()
-      }}
-    />
-  )
-})
 
 function App() {
   return (

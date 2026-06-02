@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react'
+﻿import React, { useEffect, useRef, useState, useCallback } from 'react'
 import { getSocket } from '../socketService'
-import { IconPhone, IconPhoneOff, IconVideo, IconVideoOff, IconVolumeX, IconVolume2, IconMaximize2 } from './QIcons'
+import { Phone, PhoneOff, Video, VideoOff, VolumeX, Volume2, Maximize2 } from 'lucide-react'
 
 const ICE_SERVERS = {
   iceServers: [
@@ -305,10 +305,10 @@ export default function CallModal({ user, incomingCall, onClose }) {
             {callState === 'ringing' && activeCall.isIncoming && (
               <>
                 <CallBtn color="var(--danger)" onClick={rejectCall} title="Từ chối">
-                  <IconPhoneOff size={22} />
+                  <PhoneOff size={22} />
                 </CallBtn>
                 <CallBtn color="var(--success)" onClick={acceptCall} title="Chấp nhận">
-                  <IconPhone size={22} />
+                  <Phone size={22} />
                 </CallBtn>
               </>
             )}
@@ -316,7 +316,7 @@ export default function CallModal({ user, incomingCall, onClose }) {
             {/* Outgoing ringing: cancel */}
             {callState === 'ringing' && !activeCall.isIncoming && (
               <CallBtn color="var(--danger)" onClick={hangUp} title="Hủy">
-                <IconPhoneOff size={22} />
+                <PhoneOff size={22} />
               </CallBtn>
             )}
 
@@ -324,15 +324,15 @@ export default function CallModal({ user, incomingCall, onClose }) {
             {(callState === 'active' || callState === 'connecting') && (
               <>
                 <CallBtn color={isMuted ? 'var(--danger)' : 'rgba(255,255,255,0.12)'} onClick={toggleMute} title={isMuted ? 'Bật mic' : 'Tắt mic'}>
-                  {isMuted ? <IconVolumeX size={20} /> : <IconVolume2 size={20} />}
+                  {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
                 </CallBtn>
                 {isVideo && (
                   <CallBtn color={isCamOff ? 'var(--danger)' : 'rgba(255,255,255,0.12)'} onClick={toggleCamera} title={isCamOff ? 'Bật cam' : 'Tắt cam'}>
-                    {isCamOff ? <IconVideoOff size={20} /> : <IconVideo size={20} />}
+                    {isCamOff ? <VideoOff size={20} /> : <Video size={20} />}
                   </CallBtn>
                 )}
                 <CallBtn color="var(--danger)" onClick={hangUp} title="Kết thúc">
-                  <IconPhoneOff size={22} />
+                  <PhoneOff size={22} />
                 </CallBtn>
               </>
             )}

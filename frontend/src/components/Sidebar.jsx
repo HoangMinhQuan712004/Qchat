@@ -6,10 +6,10 @@ import NotificationCenter from './NotificationCenter'
 import { getSocket } from '../socketService'
 import ProfileCard from './ProfileCard'
 import {
-  IconSettings, IconLogOut, IconPlus, IconMessage, IconUserPlus,
-  IconTrash, IconBellOff, IconBan, IconUserX, IconMoon, IconSun,
-  IconUsers, IconHash
-} from './QIcons'
+  Settings, LogOut, Plus, MessageSquare, UserPlus,
+  Trash2, BellOff, Ban, UserX, Moon, Sun,
+  Users, Hash
+} from 'lucide-react'
 
 export default function Sidebar({ token, user, selectedConversation, onStartConversation, onSelectConversation, onOpenSettings, onOpenGroupModal, onGroupDeleted, onLogout, onGoHome }) {
   const [users, setUsers] = useState([])
@@ -301,7 +301,7 @@ export default function Sidebar({ token, user, selectedConversation, onStartConv
                 }
               }
             }} />
-            <button className="btn-icon" onClick={() => onOpenGroupModal?.()} title="Create Group"><IconPlus size={16} /></button>
+            <button className="btn-icon" onClick={() => onOpenGroupModal?.()} title="Create Group"><Plus size={16} /></button>
           </div>
         </div>
 
@@ -337,11 +337,11 @@ export default function Sidebar({ token, user, selectedConversation, onStartConv
                       </div>
                     </div>
                     <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                      <button className="btn-icon" title="Message" onClick={() => onStartConversation([u._id])}><IconMessage size={15} /></button>
+                      <button className="btn-icon" title="Message" onClick={() => onStartConversation([u._id])}><MessageSquare size={15} /></button>
                       {isFriend ? (
                         <span style={{ fontSize: 11, color: 'var(--success)', padding: '0 6px', fontWeight: 600 }}>Friends</span>
                       ) : (
-                        <button className="btn-icon" title="Add Friend" onClick={() => handleAddFriend(u)}><IconUserPlus size={15} /></button>
+                        <button className="btn-icon" title="Add Friend" onClick={() => handleAddFriend(u)}><UserPlus size={15} /></button>
                       )}
                     </div>
                   </div>
@@ -422,7 +422,7 @@ export default function Sidebar({ token, user, selectedConversation, onStartConv
                   </div>
                 </div>
                 <div>
-                  <button className="btn-icon" title="Message" onClick={() => onStartConversation([u._id])}><IconMessage size={15} /></button>
+                  <button className="btn-icon" title="Message" onClick={() => onStartConversation([u._id])}><MessageSquare size={15} /></button>
                 </div>
               </div>
             ))}
@@ -446,8 +446,8 @@ export default function Sidebar({ token, user, selectedConversation, onStartConv
             </div>
           </div>
           <div style={{ display: 'flex' }}>
-            <button className="btn-icon" onClick={() => onOpenSettings?.()} title="Settings"><IconSettings size={16} /></button>
-            <button className="btn-icon" onClick={onLogout} title="Logout"><IconLogOut size={16} /></button>
+            <button className="btn-icon" onClick={() => onOpenSettings?.()} title="Settings"><Settings size={16} /></button>
+            <button className="btn-icon" onClick={onLogout} title="Logout"><LogOut size={16} /></button>
           </div>
         </div>
       </div>
@@ -474,12 +474,12 @@ export default function Sidebar({ token, user, selectedConversation, onStartConv
           {/* GROUP ACTIONS */}
           {contextMenu.type === 'group' && contextMenu.data && user && String(contextMenu.data.createdBy) === String(user._id) && (
             <div className="context-menu-item danger" onClick={() => { setGroupToDelete(contextMenu.data._id); setContextMenu(null); }}>
-              <IconTrash size={14} /> Delete Group
+              <Trash2 size={14} /> Delete Group
             </div>
           )}
           {contextMenu.type === 'group' && (
             <div className="context-menu-item" onClick={() => { addToast('Đã tắt thông báo nhóm này', 'success'); setContextMenu(null); }}>
-              <IconBellOff size={14} /> Mute Notifications
+              <BellOff size={14} /> Mute Notifications
             </div>
           )}
 
@@ -487,13 +487,13 @@ export default function Sidebar({ token, user, selectedConversation, onStartConv
           {contextMenu.type === 'friend' && (
             <>
               <div className="context-menu-item" onClick={() => onStartConversation([contextMenu.data._id])}>
-                <IconMessage size={14} /> Message
+                <MessageSquare size={14} /> Message
               </div>
               <div className="context-menu-item" onClick={handleUnfriend}>
-                <IconUserX size={14} /> Unfriend
+                <UserX size={14} /> Unfriend
               </div>
               <div className="context-menu-item danger" onClick={handleBlock}>
-                <IconBan size={14} /> Block
+                <Ban size={14} /> Block
               </div>
             </>
           )}

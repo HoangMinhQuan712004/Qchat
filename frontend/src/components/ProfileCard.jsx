@@ -1,6 +1,6 @@
-import React from 'react'
+﻿import React from 'react'
 import { API_URL } from '../config'
-import { IconX, IconMessage } from './QIcons'
+import { X, MessageSquare } from 'lucide-react'
 
 export default function ProfileCard({ user, onClose, onMessage }) {
   if (!user) return null;
@@ -26,7 +26,7 @@ export default function ProfileCard({ user, onClose, onMessage }) {
             onClick={onClose}
             style={{ position: 'absolute', top: 8, right: 8, color: 'white', opacity: 0.9 }}
           >
-            <IconX size={16} />
+            <X size={16} />
           </button>
           <div style={{
             position: 'absolute',
@@ -81,7 +81,7 @@ export default function ProfileCard({ user, onClose, onMessage }) {
         {/* Actions */}
         <div style={{ padding: '0 20px 20px', display: 'flex', gap: 8 }}>
           <button className="btn" style={{ flex: 1, gap: 8 }} onClick={onMessage}>
-            <IconMessage size={16} /> Nhắn tin
+            <MessageSquare size={16} /> Nhắn tin
           </button>
         </div>
       </div>

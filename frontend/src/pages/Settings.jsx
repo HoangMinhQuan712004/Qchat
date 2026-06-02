@@ -2,7 +2,7 @@
 import { API_URL } from '../config'
 import axios from 'axios'
 import { useToast } from '../components/Toast'
-import { IconCamera, IconUser, IconStar, IconBan, IconWallet, IconX } from '../components/QIcons'
+import { Camera, User, Star, Ban, Wallet, X } from 'lucide-react'
 
 export default function Settings({ onClose, user, onUserUpdate }) {
   const { addToast, showConfirm } = useToast();
@@ -109,29 +109,29 @@ export default function Settings({ onClose, user, onUserUpdate }) {
               className={`nav-item ${activeTab === 'account' ? 'active' : ''}`}
               onClick={() => setActiveTab('account')}
             >
-              <IconUser size={15} /> My Account
+              <User size={15} /> My Account
             </button>
             <button
               className={`nav-item ${activeTab === 'appearance' ? 'active' : ''}`}
               onClick={() => setActiveTab('appearance')}
             >
-              <IconStar size={15} /> Appearance
+              <Star size={15} /> Appearance
             </button>
             <button
               className={`nav-item ${activeTab === 'blocked' ? 'active' : ''}`}
               onClick={() => setActiveTab('blocked')}
             >
-              <IconBan size={15} /> Blocked Users
+              <Ban size={15} /> Blocked Users
             </button>
             <button
               className={`nav-item ${activeTab === 'wallet' ? 'active' : ''}`}
               onClick={() => setActiveTab('wallet')}
             >
-              <IconWallet size={15} /> Wallet
+              <Wallet size={15} /> Wallet
             </button>
           </nav>
           <div className="settings-footer">
-            <button className="btn ghost" onClick={onClose} style={{ width: '100%', gap: 8 }}><IconX size={14} /> Close</button>
+            <button className="btn ghost" onClick={onClose} style={{ width: '100%', gap: 8 }}><X size={14} /> Close</button>
           </div>
         </div>
 
@@ -166,7 +166,7 @@ export default function Settings({ onClose, user, onUserUpdate }) {
                         fontSize: 12, color: '#fff'
                       }}
                     >
-                      {uploadingAvatar ? '…' : <IconCamera size={12} />}
+                      {uploadingAvatar ? '…' : <Camera size={12} />}
                     </button>
                     <input ref={avatarInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={uploadAvatar} />
                   </div>

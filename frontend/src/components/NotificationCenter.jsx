@@ -2,7 +2,7 @@
 import { getSocket } from '../socketService';
 import { API_URL } from '../config';
 import { useToast } from './Toast';
-import { IconBell, IconInbox } from './QIcons';
+import { Bell, Inbox } from 'lucide-react';
 
 export default function NotificationCenter({ token, user, onSelectNotification }) {
   const { addToast } = useToast();
@@ -96,7 +96,7 @@ export default function NotificationCenter({ token, user, onSelectNotification }
   return (
     <div className="notif-center" ref={containerRef} style={{ position: 'relative' }}>
       <button className="btn-icon" onClick={() => setIsOpen(!isOpen)} style={{ position: 'relative', borderRadius: '50%', width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', background: isOpen ? 'var(--accent-dim)' : 'transparent', border: isOpen ? '1px solid var(--border-hover)' : '1px solid transparent', color: isOpen ? 'var(--accent)' : 'var(--muted)' }}>
-        <IconBell size={18} />
+        <Bell size={18} />
         {unreadCount > 0 && (
           <span style={{ position: 'absolute', top: -2, right: -2, background: 'var(--danger)', color: 'white', borderRadius: '50%', fontSize: '10px', minWidth: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', border: '2px solid var(--bg-panel)' }}>
             {unreadCount > 99 ? '99+' : unreadCount}
@@ -143,7 +143,7 @@ export default function NotificationCenter({ token, user, onSelectNotification }
 
           {notifications.length === 0 && friendRequests.length === 0 && (
             <div style={{ padding: 32, textAlign: 'center', opacity: 0.5, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-              <IconInbox size={36} style={{ color: 'var(--muted)' }} />
+              <Inbox size={36} style={{ color: 'var(--muted)' }} />
               <div style={{ fontSize: '0.85rem' }}>Chưa có thông báo</div>
             </div>
           )}

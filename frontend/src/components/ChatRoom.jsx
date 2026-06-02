@@ -4,8 +4,8 @@ import { useChatStore } from '../stores/useChatStore'
 import axios from 'axios'
 import { API_URL } from '../config'
 import { useToast } from './Toast'
-import { IconSend, IconPaperclip, IconMic, IconSmile, IconReply, IconEdit, IconTrash, IconX, IconFile, IconMessage, IconCheckCheck, IconCheck, IconImage } from './QIcons'
-import EmojiPicker from 'emoji-picker-react'
+import { Send, Paperclip, Mic, Smile, Reply, Pencil, Trash2, X, File, MessageSquare, CheckCheck, Check, Image } from 'lucide-react'
+import EmojiPicker from './EmojiPicker'
 
 const QUICK_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '😡'];
 
@@ -62,12 +62,17 @@ export default function ChatRoom({ token, conversationId, user, searchQuery, con
     setPendingFile(null);
   }
 
-  async function uploadAndSendFile(file, type) {
+  async function uploadAndSendFile(file, hintType) {
     const formData = new FormData();
     formData.append('file', file);
     const tokenHeader = token ? { headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'multipart/form-data' } } : {};
     const res = await axios.post(`${API_URL}/upload`, formData, tokenHeader);
-    const { url, filename } = res.data;
+    const { url, filename, mimetype } = res.data;
+    // Dùng mimetype từ backend để detect đúng, không phụ thuộc file.type của browser
+    let type = hintType || 'file';
+    if (mimetype?.startsWith('image/')) type = 'image';
+    else if (mimetype?.startsWith('video/')) type = 'video';
+    else if (mimetype?.startsWith('audio/')) type = 'audio';
     return { url, filename, type };
   }
 
@@ -458,6 +463,13 @@ export default function ChatRoom({ token, conversationId, user, searchQuery, con
   };
 
   // ── Helpers ───────────────────────────────────────────────────────────────
+  // Build absolute URL — handle cả relative (/uploads/...) lẫn absolute (https://...)
+  function buildFileUrl(url) {
+    if (!url) return ''
+    if (url.startsWith('http://') || url.startsWith('https://')) return url
+    return `${API_URL}${url}`
+  }
+
   function formatTime(createdAt) {
     const d = new Date(createdAt);
     return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -524,7 +536,7 @@ export default function ChatRoom({ token, conversationId, user, searchQuery, con
       <div className="messages-list" ref={scrollRef} onScroll={handleScroll} onWheel={handleWheel}>
         {messages.length === 0 && (
           <div className="empty-chat-state">
-            <div className="empty-icon"><IconMessage size={52} /></div>
+            <div className="empty-icon"><MessageSquare size={52} /></div>
             <p style={{ fontSize: '0.95rem' }}>No messages yet. Start the conversation!</p>
           </div>
         )}
@@ -594,7 +606,7 @@ export default function ChatRoom({ token, conversationId, user, searchQuery, con
                     <div className={`message-actions ${isMe ? 'actions-me' : 'actions-other'}`}>
                       <div style={{ position: 'relative', display: 'inline-block' }}>
                         <button className="message-action-btn" title="React" onClick={(e) => { e.stopPropagation(); setEmojiPickerMsgId(prev => prev === m._id ? null : m._id); }}>
-                          <IconSmile size={15} />
+                          <Smile size={15} />
                         </button>
                         {showEmojiPicker && (
                           <div className="emoji-picker-wrapper" onClick={e => e.stopPropagation()}>
@@ -604,12 +616,12 @@ export default function ChatRoom({ token, conversationId, user, searchQuery, con
                           </div>
                         )}
                       </div>
-                      <button className="message-action-btn" title="Reply" onClick={() => handleStartReply(m)}><IconReply size={15} /></button>
+                      <button className="message-action-btn" title="Reply" onClick={() => handleStartReply(m)}><Reply size={15} /></button>
                       {isMe && m.type === 'text' && (
-                        <button className="message-action-btn" title="Edit" onClick={() => handleStartEdit(m)}><IconEdit size={15} /></button>
+                        <button className="message-action-btn" title="Edit" onClick={() => handleStartEdit(m)}><Pencil size={15} /></button>
                       )}
                       {isMe && (
-                        <button className="message-action-btn danger" title="Delete" onClick={() => handleDelete(m._id)}><IconTrash size={15} /></button>
+                        <button className="message-action-btn danger" title="Delete" onClick={() => handleDelete(m._id)}><Trash2 size={15} /></button>
                       )}
                     </div>
                   )}
@@ -632,18 +644,31 @@ export default function ChatRoom({ token, conversationId, user, searchQuery, con
                       <>
                         {m.type === 'text' && <div className="message-text">{m.text}</div>}
                         {m.type === 'image' && m.attachments?.[0] && (
-                          <img src={`${API_URL}${m.attachments[0].url}`} className="message-image"
-                            onClick={() => window.open(`${API_URL}${m.attachments[0].url}`, '_blank')} alt="attachment" />
+                          <img
+                            src={buildFileUrl(m.attachments[0].url)}
+                            className="message-image"
+                            alt={m.attachments[0].name || 'image'}
+                            onClick={() => window.open(buildFileUrl(m.attachments[0].url), '_blank')}
+                            onError={e => {
+                              e.currentTarget.style.display = 'none'
+                              const a = document.createElement('a')
+                              a.href = buildFileUrl(m.attachments[0].url)
+                              a.target = '_blank'
+                              a.textContent = '📎 ' + (m.attachments[0].name || 'Xem ảnh')
+                              a.className = 'message-file-link'
+                              e.currentTarget.parentNode?.appendChild(a)
+                            }}
+                          />
                         )}
                         {m.type === 'video' && m.attachments?.[0] && (
-                          <video src={`${API_URL}${m.attachments[0].url}`} controls className="message-video" />
+                          <video src={buildFileUrl(m.attachments[0].url)} controls className="message-video" />
                         )}
                         {m.type === 'audio' && m.attachments?.[0] && (
-                          <audio src={`${API_URL}${m.attachments[0].url}`} controls className="message-audio" />
+                          <audio src={buildFileUrl(m.attachments[0].url)} controls className="message-audio" />
                         )}
                         {m.type === 'file' && m.attachments?.[0] && (
-                          <a href={`${API_URL}${m.attachments[0].url}`} target="_blank" rel="noreferrer" className="message-file-link">
-                            <IconFile size={14} /> {m.attachments[0].name || 'Attached File'}
+                          <a href={buildFileUrl(m.attachments[0].url)} target="_blank" rel="noreferrer" className="message-file-link">
+                            <File size={14} /> {m.attachments[0].name || 'Attached File'}
                           </a>
                         )}
                         {m.edited && <span style={{ fontSize: 9, opacity: 0.45, marginLeft: 4 }}>(edited)</span>}
@@ -696,7 +721,7 @@ export default function ChatRoom({ token, conversationId, user, searchQuery, con
         {replyToMsg && !editingMsgId && (
           <div className="message-reply-bar">
             <div className="reply-bar-content">
-              <span className="reply-bar-icon"><IconReply size={13} /></span>
+              <span className="reply-bar-icon"><Reply size={13} /></span>
               <div className="reply-bar-text" style={{ display: 'flex', flexDirection: 'column', gap: 1, minWidth: 0 }}>
                 <span className="reply-bar-name">{getSenderName(replyToMsg.sender)}</span>
                 <span className="reply-bar-preview">
@@ -706,7 +731,7 @@ export default function ChatRoom({ token, conversationId, user, searchQuery, con
                 </span>
               </div>
             </div>
-            <button className="reply-bar-close" onClick={() => setReplyToMsg(null)} title="Cancel reply"><IconX size={13} /></button>
+            <button className="reply-bar-close" onClick={() => setReplyToMsg(null)} title="Cancel reply"><X size={13} /></button>
           </div>
         )}
 
@@ -714,10 +739,10 @@ export default function ChatRoom({ token, conversationId, user, searchQuery, con
         {editingMsgId && (
           <div className="message-reply-bar edit-bar">
             <div className="reply-bar-content">
-              <span className="reply-bar-icon"><IconEdit size={13} /></span>
+              <span className="reply-bar-icon"><Pencil size={13} /></span>
               <span className="reply-bar-name">Editing message</span>
             </div>
-            <button className="reply-bar-close" onClick={() => { setEditingMsgId(null); setText(''); }} title="Cancel edit"><IconX size={13} /></button>
+            <button className="reply-bar-close" onClick={() => { setEditingMsgId(null); setText(''); }} title="Cancel edit"><X size={13} /></button>
           </div>
         )}
 
@@ -756,7 +781,7 @@ export default function ChatRoom({ token, conversationId, user, searchQuery, con
                       width: 28, height: 28, color: '#fff',
                     }}
                   >
-                    <IconX size={14} />
+                    <X size={14} />
                   </button>
                 </div>
               )}
@@ -766,7 +791,7 @@ export default function ChatRoom({ token, conversationId, user, searchQuery, con
                 <div style={{ position: 'relative' }}>
                   <video src={pendingFile.previewUrl} style={{ display: 'block', width: '100%', maxHeight: 220 }} controls />
                   <button className="btn-icon" onClick={removePendingFile} style={{ position: 'absolute', top: 8, right: 8, background: 'rgba(0,0,0,0.6)', borderRadius: '50%', width: 28, height: 28, color: '#fff' }}>
-                    <IconX size={14} />
+                    <X size={14} />
                   </button>
                 </div>
               )}
@@ -775,13 +800,13 @@ export default function ChatRoom({ token, conversationId, user, searchQuery, con
               {(pendingFile.type === 'file' || pendingFile.type === 'audio') && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px' }}>
                   <div style={{ width: 40, height: 40, borderRadius: 8, background: 'var(--accent-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <IconFile size={20} style={{ color: 'var(--accent)' }} />
+                    <File size={20} style={{ color: 'var(--accent)' }} />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: '0.85rem', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{pendingFile.name}</div>
                     <div style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>Nhấn Gửi để gửi</div>
                   </div>
-                  <button className="btn-icon" onClick={removePendingFile}><IconX size={16} /></button>
+                  <button className="btn-icon" onClick={removePendingFile}><X size={16} /></button>
                 </div>
               )}
 
@@ -800,10 +825,6 @@ export default function ChatRoom({ token, conversationId, user, searchQuery, con
                 <EmojiPicker
                   onEmojiClick={(e) => { setText(t => t + e.emoji); setShowInputEmoji(false); inputRef.current?.focus(); }}
                   theme="dark"
-                  width={320}
-                  height={380}
-                  searchPlaceholder="Tìm emoji..."
-                  skinTonesDisabled
                 />
               </div>
             )}
@@ -812,16 +833,16 @@ export default function ChatRoom({ token, conversationId, user, searchQuery, con
             {/* File inputs */}
             <input type="file" ref={imageInputRef} accept="image/*,video/*" style={{ display: 'none' }} onChange={handleFileSelect} />
             <input type="file" ref={fileInputRef} accept="*/*" style={{ display: 'none' }} onChange={handleFileSelect} />
-            <button className="btn-icon-simple" title="Gửi ảnh / video" onClick={() => imageInputRef.current?.click()}><IconImage size={18} /></button>
-            <button className="btn-icon-simple" title="Đính kèm file" onClick={() => fileInputRef.current?.click()}><IconPaperclip size={18} /></button>
-            <button className="btn-icon-simple" title="Ghi âm" onClick={startRecording}><IconMic size={18} /></button>
+            <button className="btn-icon-simple" title="Gửi ảnh / video" onClick={() => imageInputRef.current?.click()}><Image size={18} /></button>
+            <button className="btn-icon-simple" title="Đính kèm file" onClick={() => fileInputRef.current?.click()}><Paperclip size={18} /></button>
+            <button className="btn-icon-simple" title="Ghi âm" onClick={startRecording}><Mic size={18} /></button>
             <button
               className="btn-icon-simple"
               title="Emoji"
               onClick={() => setShowInputEmoji(v => !v)}
               style={{ color: showInputEmoji ? 'var(--accent)' : undefined }}
             >
-              <IconSmile size={18} />
+              <Smile size={18} />
             </button>
 
             <input
@@ -839,7 +860,7 @@ export default function ChatRoom({ token, conversationId, user, searchQuery, con
               }
             />
             <button type="button" className="send-btn" onClick={handleSend}>
-              <IconSend size={16} />
+              <Send size={16} />
             </button>
           </div>
           </>
@@ -855,10 +876,10 @@ function MessageTick({ readBy, members, myId }) {
   const allRead = others.length > 0 && readByOthers.length >= others.length
 
   if (allRead) {
-    return <IconCheckCheck size={13} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+    return <CheckCheck size={13} style={{ color: 'var(--accent)', flexShrink: 0 }} />
   }
   if (readByOthers.length > 0) {
-    return <IconCheckCheck size={13} style={{ color: 'var(--muted)', flexShrink: 0 }} />
+    return <CheckCheck size={13} style={{ color: 'var(--muted)', flexShrink: 0 }} />
   }
-  return <IconCheck size={13} style={{ color: 'rgba(255,255,255,0.45)', flexShrink: 0 }} />
+  return <Check size={13} style={{ color: 'rgba(255,255,255,0.45)', flexShrink: 0 }} />
 }

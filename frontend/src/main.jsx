@@ -17,7 +17,7 @@ import { connectSocket, disconnectSocket, getSocket } from './socketService'
 import { ToastProvider, useToast } from './components/Toast'
 import MediaGallery from './components/MediaGallery'
 import NewsWidget from './components/NewsWidget'
-import { IconArrowLeft, IconSearch, IconX, IconHash, IconUsers, IconPhone, IconVideo } from './components/QIcons'
+import { ArrowLeft, Search, X, Hash, Users, Phone, Video } from 'lucide-react'
 import GroupInfoPanel from './components/GroupInfoPanel'
 import CallModal from './components/CallModal'
 
@@ -253,42 +253,42 @@ function AppContent() {
                   <div className="chat-header">
                     {!isSearching ? (
                       <>
-                        <button className="btn-icon" onClick={() => setSelectedConversation(null)} title="Quay về trang chủ"><IconArrowLeft size={18} /></button>
+                        <button className="btn-icon" onClick={() => setSelectedConversation(null)} title="Quay về trang chủ"><ArrowLeft size={18} /></button>
                         <div style={{ width: 34, height: 34, borderRadius: 10, background: selectedConversation.isGroup ? 'linear-gradient(135deg, #1e1b4b, #312e81)' : 'linear-gradient(135deg, #1e1b4b, #312e81)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: selectedConversation.isGroup ? '#a5b4fc' : 'var(--accent)', fontSize: 13, fontWeight: 700, flexShrink: 0 }}>
-                          {selectedConversation.isGroup ? <IconHash size={15} /> : (getHeaderTitle() || '?').slice(0,1).toUpperCase()}
+                          {selectedConversation.isGroup ? <Hash size={15} /> : (getHeaderTitle() || '?').slice(0,1).toUpperCase()}
                         </div>
                         <div style={{ minWidth: 0 }}>
                           <div style={{ fontWeight: 700, fontSize: '0.95rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{getHeaderTitle()}</div>
                           {selectedConversation.isGroup && <div style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>Group</div>}
                         </div>
                         <div style={{ marginLeft: 'auto', display: 'flex', gap: 4, alignItems: 'center' }}>
-                          <button className="btn-icon" onClick={() => setIsSearching(true)} title="Tìm kiếm"><IconSearch size={17} /></button>
+                          <button className="btn-icon" onClick={() => setIsSearching(true)} title="Tìm kiếm"><Search size={17} /></button>
                           {!selectedConversation.isGroup && (
                             <>
                               <button className="btn-icon" title="Gọi thoại" onClick={() => {
                                 const tid = getOtherUserId(); if (!tid) return addToast('Không tìm được người nhận', 'error');
                                 setOutgoingCall({ callId: 'call-' + String(Math.random()).slice(2), targetId: tid, targetName: getHeaderTitle(), callType: 'voice' })
                               }}>
-                                <IconPhone size={16} />
+                                <Phone size={16} />
                               </button>
                               <button className="btn-icon" title="Gọi video" onClick={() => {
                                 const tid = getOtherUserId(); if (!tid) return addToast('Không tìm được người nhận', 'error');
                                 setOutgoingCall({ callId: 'call-' + String(Math.random()).slice(2), targetId: tid, targetName: getHeaderTitle(), callType: 'video' })
                               }}>
-                                <IconVideo size={16} />
+                                <Video size={16} />
                               </button>
                             </>
                           )}
                           {selectedConversation.isGroup && (
                             <button className="btn-icon" title="Thành viên nhóm" onClick={() => setShowGroupInfo(v => !v)} style={{ color: showGroupInfo ? 'var(--accent)' : 'var(--muted)' }}>
-                              <IconUsers size={16} />
+                              <Users size={16} />
                             </button>
                           )}
                         </div>
                       </>
                     ) : (
                       <div style={{ display: 'flex', alignItems: 'center', width: '100%', gap: 10 }}>
-                        <IconSearch size={16} style={{ color: 'var(--muted)', flexShrink: 0 }} />
+                        <Search size={16} style={{ color: 'var(--muted)', flexShrink: 0 }} />
                         <input
                           autoFocus
                           className="search-input"
@@ -297,7 +297,7 @@ function AppContent() {
                           value={searchQuery}
                           onChange={e => setSearchQuery(e.target.value)}
                         />
-                        <button className="btn-icon" onClick={() => { setIsSearching(false); setSearchQuery(''); }}><IconX size={16} /></button>
+                        <button className="btn-icon" onClick={() => { setIsSearching(false); setSearchQuery(''); }}><X size={16} /></button>
                       </div>
                     )}
                   </div>

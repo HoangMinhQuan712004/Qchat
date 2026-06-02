@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react'
+﻿import React, { useEffect, useState } from 'react'
 import { API_URL } from '../config'
 import { useToast } from './Toast'
 import {
-  IconX, IconUsers, IconUserPlus, IconTrash, IconEdit,
-  IconCheck, IconCrown, IconLogOut, IconUsersPlus
-} from './QIcons'
+  X, Users, UserPlus, Trash2, Pencil,
+  Check, Crown, LogOut, UserPlus2
+} from 'lucide-react'
 
 export default function GroupInfoPanel({ token, group, conversationId, user, onClose, onGroupUpdated, onLeave }) {
   const { addToast, showConfirm } = useToast()
@@ -144,10 +144,10 @@ export default function GroupInfoPanel({ token, group, conversationId, user, onC
                 autoFocus
               />
               <button className="btn-icon" onClick={saveName} style={{ color: 'var(--success)' }}>
-                <IconCheck size={16} />
+                <Check size={16} />
               </button>
               <button className="btn-icon" onClick={() => setEditingName(false)}>
-                <IconX size={16} />
+                <X size={16} />
               </button>
             </div>
           ) : (
@@ -155,18 +155,18 @@ export default function GroupInfoPanel({ token, group, conversationId, user, onC
               <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>{newName || groupName}</span>
               {myRole === 'admin' && (
                 <button className="btn-icon" onClick={() => setEditingName(true)} style={{ width: 24, height: 24 }}>
-                  <IconEdit size={13} />
+                  <Pencil size={13} />
                 </button>
               )}
             </div>
           )}
         </div>
-        <button className="btn-icon" onClick={onClose}><IconX size={17} /></button>
+        <button className="btn-icon" onClick={onClose}><X size={17} /></button>
       </div>
 
       {/* Members count */}
       <div style={{ padding: '10px 16px 4px', display: 'flex', alignItems: 'center', gap: 6 }}>
-        <IconUsers size={14} style={{ color: 'var(--muted)' }} />
+        <Users size={14} style={{ color: 'var(--muted)' }} />
         <span style={{ fontSize: '0.78rem', color: 'var(--muted)', fontWeight: 600 }}>
           {members.length} thành viên
         </span>
@@ -177,7 +177,7 @@ export default function GroupInfoPanel({ token, group, conversationId, user, onC
             title="Thêm thành viên"
             onClick={() => setShowAdd(v => !v)}
           >
-            <IconUsersPlus size={14} />
+            <UserPlus2 size={14} />
           </button>
         )}
       </div>
@@ -210,7 +210,7 @@ export default function GroupInfoPanel({ token, group, conversationId, user, onC
                   <span style={{ fontSize: '0.85rem', flex: 1 }}>{u.displayName || u.username}</span>
                   <button className="btn-icon" style={{ width: 24, height: 24, color: 'var(--success)' }}
                     onClick={() => addMember(u._id, u.displayName || u.username)}>
-                    <IconUserPlus size={13} />
+                    <UserPlus size={13} />
                   </button>
                 </div>
               ))}
@@ -256,7 +256,7 @@ export default function GroupInfoPanel({ token, group, conversationId, user, onC
                   {name} {isMe && <span style={{ color: 'var(--muted)', fontWeight: 400 }}>(bạn)</span>}
                 </div>
                 <div style={{ fontSize: '0.7rem', color: isAdmin ? 'var(--accent)' : 'var(--muted)', display: 'flex', alignItems: 'center', gap: 3 }}>
-                  {isAdmin && <IconCrown size={9} />}
+                  {isAdmin && <Crown size={9} />}
                   {isAdmin ? 'Admin' : 'Thành viên'}
                 </div>
               </div>
@@ -267,7 +267,7 @@ export default function GroupInfoPanel({ token, group, conversationId, user, onC
                   title={`Kick ${name}`}
                   onClick={() => kickMember(u._id, name)}
                 >
-                  <IconTrash size={13} />
+                  <Trash2 size={13} />
                 </button>
               )}
             </div>
@@ -283,7 +283,7 @@ export default function GroupInfoPanel({ token, group, conversationId, user, onC
             style={{ width: '100%', background: 'transparent', border: '1px solid var(--danger)', color: 'var(--danger)', gap: 8 }}
             onClick={leaveGroup}
           >
-            <IconLogOut size={15} /> Rời nhóm
+            <LogOut size={15} /> Rời nhóm
           </button>
         )}
       </div>

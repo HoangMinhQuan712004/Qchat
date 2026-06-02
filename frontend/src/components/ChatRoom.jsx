@@ -47,10 +47,12 @@ export default function ChatRoom({ token, conversationId, user, searchQuery, con
   function handleFileSelect(e) {
     const file = e.target.files[0];
     if (!file) return;
+    const mime = file.type || '';
+    const ext = file.name.split('.').pop()?.toLowerCase() || '';
     let type = 'file';
-    if (file.type.startsWith('image/')) type = 'image';
-    else if (file.type.startsWith('video/')) type = 'video';
-    else if (file.type.startsWith('audio/')) type = 'audio';
+    if (mime.startsWith('image/') || ['jpg','jpeg','png','gif','webp','bmp','svg'].includes(ext)) type = 'image';
+    else if (mime.startsWith('video/') || ['mp4','webm','mov','avi'].includes(ext)) type = 'video';
+    else if (mime.startsWith('audio/') || ['mp3','wav','ogg','m4a'].includes(ext)) type = 'audio';
     const previewUrl = (type === 'image' || type === 'video') ? URL.createObjectURL(file) : null;
     setPendingFile({ file, previewUrl, type, name: file.name });
     e.target.value = null;
@@ -602,7 +604,7 @@ export default function ChatRoom({ token, conversationId, user, searchQuery, con
                   )}
 
                   {/* Action bar */}
-                  {isHovered && !m.deleted && (
+                  {(isHovered || showEmojiPicker) && !m.deleted && (
                     <div className={`message-actions ${isMe ? 'actions-me' : 'actions-other'}`}>
                       <div style={{ position: 'relative', display: 'inline-block' }}>
                         <button className="message-action-btn" title="React" onClick={(e) => { e.stopPropagation(); setEmojiPickerMsgId(prev => prev === m._id ? null : m._id); }}>

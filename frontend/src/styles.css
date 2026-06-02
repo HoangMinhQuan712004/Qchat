@@ -1854,13 +1854,12 @@ img, video { display: block; max-width: 100%; }
 .message-actions {
   display: none;
   position: absolute;
-  top: -18px;
+  top: -36px;
   right: 0;
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-md);
-  overflow: hidden;
   z-index: 100;
   animation: scaleIn 0.12s ease;
 }

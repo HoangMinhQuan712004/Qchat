@@ -4,7 +4,7 @@ import axios from 'axios'
 import { useToast } from '../components/Toast'
 import { IconCamera, IconUser, IconStar, IconBan, IconWallet, IconX } from '../components/QIcons'
 
-export default function Settings({ onClose, user }) {
+export default function Settings({ onClose, user, onUserUpdate }) {
   const { addToast, showConfirm } = useToast();
   const [theme, setTheme] = useState(() => {
     try { return localStorage.getItem('qchat_theme') || 'dark' } catch (e) { return 'dark' }
@@ -57,6 +57,7 @@ export default function Settings({ onClose, user }) {
         body: JSON.stringify({ avatarUrl: newAvatarUrl })
       });
       setProfile(p => ({ ...p, avatarUrl: newAvatarUrl }));
+      onUserUpdate?.({ avatarUrl: newAvatarUrl });
       addToast('Đã cập nhật ảnh đại diện!', 'success');
     } catch (err) {
       addToast('Upload thất bại: ' + (err.message || 'Lỗi không xác định'), 'error');
@@ -67,6 +68,8 @@ export default function Settings({ onClose, user }) {
   }
 
   async function saveProfile() {
+    const ok = await showConfirm('Lưu thay đổi hồ sơ?', { confirmText: 'Lưu' })
+    if (!ok) return
     setSaving(true)
     try {
       const token = localStorage.getItem('token')
@@ -81,6 +84,11 @@ export default function Settings({ onClose, user }) {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.message || 'Lưu thất bại')
+      onUserUpdate?.({
+        displayName: profile.displayName,
+        username: profile.username,
+        bio: profile.bio,
+      })
       addToast('Cập nhật hồ sơ thành công!', 'success')
     } catch (err) {
       addToast(err.message, 'error')

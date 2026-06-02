@@ -1854,19 +1854,23 @@ img, video { display: block; max-width: 100%; }
 .message-actions {
   display: none;
   position: absolute;
-  top: -32px;
+  top: 50%;
+  transform: translateY(-50%);
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-md);
   z-index: 200;
+  white-space: nowrap;
 }
 
 .message-row:hover .message-actions,
 .message-actions.visible { display: flex; }
 
-.message-row.me .message-actions  { right: 4px; left: auto; }
-.message-row.other .message-actions { left: 4px; right: auto; }
+/* "me" messages (right-aligned) → actions appear to the LEFT of bubble */
+.message-row.me .message-actions  { right: calc(100% + 6px); left: auto; }
+/* "other" messages (left-aligned) → actions appear to the RIGHT of bubble */
+.message-row.other .message-actions { left: calc(100% + 6px); right: auto; }
 
 .message-action-btn {
   background: transparent;

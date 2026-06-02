@@ -123,7 +123,7 @@ export default function NotificationCenter({ token, user, onSelectNotification }
                 return (
                   <div key={i} style={{ padding: '10px 16px', borderBottom: '1px solid var(--border)', background: 'rgba(88,101,242,0.05)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                      <div style={{ width: 36, height: 36, borderRadius: '10px', background: 'linear-gradient(135deg, #0891b2, #22d3ee)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, flexShrink: 0, fontSize: 15 }}>
+                      <div style={{ width: 36, height: 36, borderRadius: '10px', background: 'linear-gradient(135deg, #4338ca, #818cf8)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, flexShrink: 0, fontSize: 15 }}>
                         {name.slice(0, 1).toUpperCase()}
                       </div>
                       <div>

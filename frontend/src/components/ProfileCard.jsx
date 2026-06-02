@@ -17,7 +17,7 @@ export default function ProfileCard({ user, onClose, onMessage }) {
       >
         {/* Banner + Avatar */}
         <div style={{
-          background: 'linear-gradient(135deg, #0c4a6e 0%, #0891b2 50%, #22d3ee 100%)',
+          background: 'linear-gradient(135deg, #1e1b4b 0%, #4338ca 50%, #818cf8 100%)',
           height: 80,
           position: 'relative',
         }}>

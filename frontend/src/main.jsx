@@ -234,7 +234,7 @@ function AppContent() {
                     {!isSearching ? (
                       <>
                         <button className="btn-icon" onClick={() => setSelectedConversation(null)} title="Quay về trang chủ"><IconArrowLeft size={18} /></button>
-                        <div style={{ width: 34, height: 34, borderRadius: 10, background: selectedConversation.isGroup ? 'linear-gradient(135deg, #1e1b4b, #312e81)' : 'linear-gradient(135deg, #0c2d4a, #164e63)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: selectedConversation.isGroup ? '#a5b4fc' : 'var(--accent)', fontSize: 13, fontWeight: 700, flexShrink: 0 }}>
+                        <div style={{ width: 34, height: 34, borderRadius: 10, background: selectedConversation.isGroup ? 'linear-gradient(135deg, #1e1b4b, #312e81)' : 'linear-gradient(135deg, #1e1b4b, #312e81)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: selectedConversation.isGroup ? '#a5b4fc' : 'var(--accent)', fontSize: 13, fontWeight: 700, flexShrink: 0 }}>
                           {selectedConversation.isGroup ? <IconHash size={15} /> : (getHeaderTitle() || '?').slice(0,1).toUpperCase()}
                         </div>
                         <div style={{ minWidth: 0 }}>

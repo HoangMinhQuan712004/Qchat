@@ -104,6 +104,14 @@ router.put('/:conversationId/read', expressJwt, async (req, res, next) => {
       { conversationId: req.params.conversationId, readBy: { $ne: req.user.id } },
       { $addToSet: { readBy: req.user.id } }
     );
+    // Emit real-time read receipt so senders see ticks update instantly
+    const io = req.app.get('io');
+    if (io) {
+      io.to(String(req.params.conversationId)).emit('messages_read', {
+        conversationId: req.params.conversationId,
+        userId: String(req.user.id),
+      });
+    }
     res.json({ ok: true });
   } catch (err) { next(err); }
 });

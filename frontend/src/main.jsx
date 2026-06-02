@@ -17,7 +17,9 @@ import { connectSocket, disconnectSocket, getSocket } from './socketService'
 import { ToastProvider, useToast } from './components/Toast'
 import MediaGallery from './components/MediaGallery'
 import NewsWidget from './components/NewsWidget'
-import { IconArrowLeft, IconSearch, IconX, IconHash } from './components/QIcons'
+import { IconArrowLeft, IconSearch, IconX, IconHash, IconUsers, IconPhone, IconVideo } from './components/QIcons'
+import GroupInfoPanel from './components/GroupInfoPanel'
+import CallModal from './components/CallModal'
 
 function AppContent() {
   const [token, setToken] = useState(() => {
@@ -52,6 +54,9 @@ function AppContent() {
   const [showMediaGallery, setShowMediaGallery] = useState(false)
   const [isSearching, setIsSearching] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [showGroupInfo, setShowGroupInfo] = useState(false)
+  const [incomingCall, setIncomingCall] = useState(null)
+  const callModalRef = React.useRef(null)
 
   const { addToast, showConfirm } = useToast();
 
@@ -119,14 +124,20 @@ function AppContent() {
       }
     };
 
+    const onIncomingCall = (callData) => {
+      setIncomingCall(callData);
+    };
+
     s.on('new_message', onNewGlobal);
     s.on('message_notification', onMessageNotification);
     s.on('wallet_notification', onWalletNotification);
+    s.on('incoming_call', onIncomingCall);
 
     return () => {
       s.off('new_message', onNewGlobal);
       s.off('message_notification', onMessageNotification);
       s.off('wallet_notification', onWalletNotification);
+      s.off('incoming_call', onIncomingCall);
     };
   }, [token, user, selectedConversation, addToast]);
 
@@ -241,8 +252,28 @@ function AppContent() {
                           <div style={{ fontWeight: 700, fontSize: '0.95rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{getHeaderTitle()}</div>
                           {selectedConversation.isGroup && <div style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>Group</div>}
                         </div>
-                        <div style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
+                        <div style={{ marginLeft: 'auto', display: 'flex', gap: 2 }}>
                           <button className="btn-icon" onClick={() => setIsSearching(true)} title="Search messages"><IconSearch size={17} /></button>
+                          {!selectedConversation.isGroup && (
+                            <>
+                              <button className="btn-icon" title="Gọi thoại" onClick={() => {
+                                const otherId = (selectedConversation.members || []).find(m => String(m) !== String(user?._id))
+                                const otherName = selectedConversation.title || 'User'
+                                setIncomingCall(null)
+                                // Trigger outgoing call via ref
+                                if (callModalRef.current?.startCall) callModalRef.current.startCall(otherId, otherName, 'voice')
+                              }}><IconPhone size={16} /></button>
+                              <button className="btn-icon" title="Gọi video" onClick={() => {
+                                const otherId = (selectedConversation.members || []).find(m => String(m) !== String(user?._id))
+                                const otherName = selectedConversation.title || 'User'
+                                setIncomingCall(null)
+                                if (callModalRef.current?.startCall) callModalRef.current.startCall(otherId, otherName, 'video')
+                              }}><IconVideo size={16} /></button>
+                            </>
+                          )}
+                          {selectedConversation.isGroup && (
+                            <button className="btn-icon" title="Thành viên nhóm" onClick={() => setShowGroupInfo(v => !v)} style={{ color: showGroupInfo ? 'var(--accent)' : undefined }}><IconUsers size={16} /></button>
+                          )}
                         </div>
                       </>
                     ) : (
@@ -260,13 +291,27 @@ function AppContent() {
                       </div>
                     )}
                   </div>
-                  <div className="chat-box">
+                  <div className="chat-box" style={{ display: 'flex', minWidth: 0 }}>
                     <ChatRoom
                       token={token}
                       conversationId={selectedConversation._id}
                       user={user}
                       searchQuery={searchQuery}
+                      conversation={selectedConversation}
                     />
+                    {showGroupInfo && selectedConversation.isGroup && (
+                      <GroupInfoPanel
+                        token={token}
+                        group={{ _id: selectedConversation.groupId, name: selectedConversation.title, conversationId: selectedConversation._id }}
+                        conversationId={selectedConversation._id}
+                        user={user}
+                        onClose={() => setShowGroupInfo(false)}
+                        onGroupUpdated={(update) => {
+                          if (update.name) setSelectedConversation(c => ({ ...c, title: update.name }))
+                        }}
+                        onLeave={() => setSelectedConversation(null)}
+                      />
+                    )}
                   </div>
                 </>
               )}
@@ -338,6 +383,14 @@ function AppContent() {
 
       {!selectedConversation && !showSettings && <NewsWidget />}
 
+      {/* Call Modal — always mounted to catch incoming calls */}
+      <CallModalWrapper
+        ref={callModalRef}
+        user={user}
+        incomingCall={incomingCall}
+        onClose={() => setIncomingCall(null)}
+      />
+
       {
         showGroupModal && (
           <CreateGroupModal
@@ -353,6 +406,50 @@ function AppContent() {
     </div >
   )
 }
+
+// Wrapper that exposes startCall imperatively
+const CallModalWrapper = React.forwardRef(function CallModalWrapper({ user, incomingCall, onClose }, ref) {
+  const callRef = React.useRef(null)
+
+  React.useImperativeHandle(ref, () => ({
+    startCall: (targetId, targetName, callType) => {
+      if (callRef.current) callRef.current.startCall?.(targetId, targetName, callType)
+    }
+  }))
+
+  return <CallModalInner ref={callRef} user={user} incomingCall={incomingCall} onClose={onClose} />
+})
+
+const CallModalInner = React.forwardRef(function CallModalInner(props, ref) {
+  const [activeCall, setActiveCall] = React.useState(null)
+  const [incomingCallState, setIncomingCallState] = React.useState(null)
+
+  React.useEffect(() => {
+    if (props.incomingCall) setIncomingCallState(props.incomingCall)
+  }, [props.incomingCall])
+
+  React.useImperativeHandle(ref, () => ({
+    startCall: (targetId, targetName, callType) => {
+      setActiveCall({ targetId, targetName, callType, isOutgoing: true })
+    }
+  }))
+
+  const effectiveCall = activeCall ? { ...activeCall, callId: 'out-' + Date.now(), caller: props.user } : incomingCallState
+
+  if (!effectiveCall && !activeCall) return null
+
+  return (
+    <CallModal
+      user={props.user}
+      incomingCall={effectiveCall}
+      onClose={() => {
+        setActiveCall(null)
+        setIncomingCallState(null)
+        props.onClose?.()
+      }}
+    />
+  )
+})
 
 function App() {
   return (

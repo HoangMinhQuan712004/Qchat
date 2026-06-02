@@ -49,3 +49,14 @@ export const IconHome         = (p) => <I {...p} d="<path d='M3 9l9-7 9 7v11a2 2
 export const IconSquare       = (p) => <I {...p} d="<rect x='3' y='3' width='18' height='18' rx='2' ry='2'/>" />
 export const IconStop         = (p) => <I {...p} d="<rect x='3' y='3' width='18' height='18' rx='2' ry='2'/>" fill="currentColor" sw={0} />
 export const IconChevronDown  = (p) => <I {...p} d="<polyline points='6 9 12 15 18 9'/>" />
+export const IconCheckCheck   = (p) => <I {...p} d="<polyline points='17 1 9 9 6 6'/><polyline points='22 6 12 16 9 13'/>" />
+export const IconPhone        = (p) => <I {...p} d="<path d='M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.82a16 16 0 0 0 6.29 6.29l1.17-1.17a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z'/>" />
+export const IconPhoneOff     = (p) => <I {...p} d="<path d='M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-3.45-3.07M5.26 5.26A19.79 19.79 0 0 0 3.32 12a19.79 19.79 0 0 0 3.07 8.63 2 2 0 0 0 2.18.46 12.84 12.84 0 0 0 2.81-.7 2 2 0 0 0 .45-2.11l-1.27-1.27'/><line x1='1' y1='1' x2='23' y2='23'/>" />
+export const IconVideo        = (p) => <I {...p} d="<polygon points='23 7 16 12 23 17 23 7'/><rect x='1' y='5' width='15' height='14' rx='2' ry='2'/>" />
+export const IconVideoOff     = (p) => <I {...p} d="<path d='M16 16v1a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2m5.66 0H14a2 2 0 0 1 2 2v3.34l1 1L23 7v10'/><line x1='1' y1='1' x2='23' y2='23'/>" />
+export const IconVolume2      = (p) => <I {...p} d="<polygon points='11 5 6 9 2 9 2 15 6 15 11 19 11 5'/><path d='M19.07 4.93a10 10 0 0 1 0 14.14'/><path d='M15.54 8.46a5 5 0 0 1 0 7.07'/>" />
+export const IconVolumeX      = (p) => <I {...p} d="<polygon points='11 5 6 9 2 9 2 15 6 15 11 19 11 5'/><line x1='23' y1='9' x2='17' y2='15'/><line x1='17' y1='9' x2='23' y2='15'/>" />
+export const IconMaximize2    = (p) => <I {...p} d="<polyline points='15 3 21 3 21 9'/><polyline points='9 21 3 21 3 15'/><line x1='21' y1='3' x2='14' y2='10'/><line x1='3' y1='21' x2='10' y2='14'/>" />
+export const IconUsersPlus    = (p) => <I {...p} d="<path d='M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2'/><circle cx='9' cy='7' r='4'/><path d='M23 21v-2a4 4 0 0 0-3-3.87'/><path d='M16 3.13a4 4 0 0 1 0 7.75'/><line x1='20' y1='8' x2='20' y2='14'/><line x1='23' y1='11' x2='17' y2='11'/>" />
+export const IconChevronRight = (p) => <I {...p} d="<polyline points='9 18 15 12 9 6'/>" />
+export const IconCrown        = (p) => <I {...p} d="<path d='M2 20h20'/><path d='M5 20V8l7-5 7 5v12'/><path d='M9 20v-5h6v5'/>" />

@@ -1907,6 +1907,14 @@ img, video { display: block; max-width: 100%; }
   50%      { opacity: 0.35; }
 }
 
+@keyframes slideInRight {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+/* Ensure GroupInfoPanel doesn't overflow chat area */
+.chat-box { position: relative; overflow: hidden; }
+
 .recording-ui .dot {
   display: inline-block;
   width: 10px;

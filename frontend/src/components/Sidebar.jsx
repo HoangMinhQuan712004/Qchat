@@ -387,7 +387,7 @@ export default function Sidebar({ token, user, selectedConversation, onStartConv
                 <div
                   key={c._id}
                   className="conv-row"
-                  onClick={() => onSelectConversation(c)}
+                  onClick={() => onSelectConversation({ ...c, groupId: groupInfo?._id })}
                   onContextMenu={(e) => handleContextMenu(e, groupInfo, 'group')}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>

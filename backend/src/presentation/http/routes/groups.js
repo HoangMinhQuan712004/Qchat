@@ -38,12 +38,89 @@ router.get('/', expressJwt, async (req, res) => {
   res.json({ groups });
 });
 
+// GET /groups/:id - group detail + members
+router.get('/:id', expressJwt, async (req, res, next) => {
+  try {
+    const group = await Group.findById(req.params.id);
+    if (!group) return res.status(404).json({ message: 'Not found' });
+    const members = await GroupMember.find({ groupId: req.params.id })
+      .populate('userId', 'username displayName avatarUrl isOnline');
+    const me = members.find(m => String(m.userId?._id) === String(req.user.id));
+    res.json({ group, members, myRole: me?.role || 'member' });
+  } catch (err) { next(err); }
+});
+
+// PUT /groups/:id - rename group or update avatar
+router.put('/:id', expressJwt, async (req, res, next) => {
+  try {
+    const me = await GroupMember.findOne({ groupId: req.params.id, userId: req.user.id });
+    if (!me || me.role !== 'admin') return res.status(403).json({ message: 'Chỉ admin mới được sửa nhóm' });
+    const { name, avatarUrl } = req.body;
+    const update = {};
+    if (name) update.name = String(name).trim().slice(0, 50);
+    if (avatarUrl !== undefined) update.avatarUrl = avatarUrl;
+    const group = await Group.findByIdAndUpdate(req.params.id, update, { new: true });
+    if (name && group?.conversationId) {
+      await Conversation.findByIdAndUpdate(group.conversationId, { title: name });
+    }
+    res.json({ group });
+  } catch (err) { next(err); }
+});
+
 // POST /groups/:id/members - add member
-router.post('/:id/members', expressJwt, async (req, res) => {
-  const { userId } = req.body;
-  if (!userId) return res.status(400).json({ message: 'userId required' });
-  const gm = await GroupMember.findOneAndUpdate({ groupId: req.params.id, userId }, { $setOnInsert: { role: 'member' } }, { upsert: true, new: true });
-  res.json({ ok: true, member: gm });
+router.post('/:id/members', expressJwt, async (req, res, next) => {
+  try {
+    const { userId } = req.body;
+    if (!userId) return res.status(400).json({ message: 'userId required' });
+    const me = await GroupMember.findOne({ groupId: req.params.id, userId: req.user.id });
+    if (!me || me.role !== 'admin') return res.status(403).json({ message: 'Chỉ admin mới được thêm thành viên' });
+    await GroupMember.findOneAndUpdate(
+      { groupId: req.params.id, userId },
+      { $setOnInsert: { role: 'member' } },
+      { upsert: true, new: true }
+    );
+    const group = await Group.findById(req.params.id);
+    if (group?.conversationId) {
+      await Conversation.findByIdAndUpdate(group.conversationId, { $addToSet: { members: userId } });
+    }
+    await Group.findByIdAndUpdate(req.params.id, { $inc: { membersCount: 1 } });
+    res.json({ ok: true });
+  } catch (err) { next(err); }
+});
+
+// DELETE /groups/:id/members/:userId - kick member
+router.delete('/:id/members/:userId', expressJwt, async (req, res, next) => {
+  try {
+    const me = await GroupMember.findOne({ groupId: req.params.id, userId: req.user.id });
+    if (!me || me.role !== 'admin') return res.status(403).json({ message: 'Chỉ admin mới được kick' });
+    if (String(req.params.userId) === String(req.user.id)) {
+      return res.status(400).json({ message: 'Không thể tự kick mình' });
+    }
+    await GroupMember.deleteOne({ groupId: req.params.id, userId: req.params.userId });
+    const group = await Group.findById(req.params.id);
+    if (group?.conversationId) {
+      await Conversation.findByIdAndUpdate(group.conversationId, { $pull: { members: req.params.userId } });
+    }
+    await Group.findByIdAndUpdate(req.params.id, { $inc: { membersCount: -1 } });
+    res.json({ ok: true });
+  } catch (err) { next(err); }
+});
+
+// POST /groups/:id/leave - leave group (non-admin)
+router.post('/:id/leave', expressJwt, async (req, res, next) => {
+  try {
+    const group = await Group.findById(req.params.id);
+    if (!group) return res.status(404).json({ message: 'Not found' });
+    if (String(group.createdBy) === String(req.user.id)) {
+      return res.status(400).json({ message: 'Admin phải xóa nhóm thay vì rời' });
+    }
+    await GroupMember.deleteOne({ groupId: req.params.id, userId: req.user.id });
+    if (group.conversationId) {
+      await Conversation.findByIdAndUpdate(group.conversationId, { $pull: { members: req.user.id } });
+    }
+    await Group.findByIdAndUpdate(req.params.id, { $inc: { membersCount: -1 } });
+    res.json({ ok: true });
+  } catch (err) { next(err); }
 });
 
 // DELETE /groups/:id - delete group

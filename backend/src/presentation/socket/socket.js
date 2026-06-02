@@ -139,6 +139,42 @@ function setupSocket(server) {
       }
     });
 
+    // ── WebRTC Call Signaling ─────────────────────────────────────────────────
+    socket.on('call_request', ({ targetUserId, callType, callId, conversationId }) => {
+      if (!targetUserId || !callId) return;
+      io.to(String(targetUserId)).emit('incoming_call', {
+        callId,
+        callType: callType || 'voice',
+        conversationId,
+        caller: { id: userId, displayName: user.displayName || user.username },
+      });
+    });
+
+    socket.on('call_offer', ({ callId, targetUserId, sdp }) => {
+      if (!targetUserId) return;
+      io.to(String(targetUserId)).emit('call_offer', { callId, sdp, callerId: userId });
+    });
+
+    socket.on('call_accept', ({ callId, targetUserId, sdp }) => {
+      if (!targetUserId) return;
+      io.to(String(targetUserId)).emit('call_accepted', { callId, sdp });
+    });
+
+    socket.on('call_reject', ({ callId, targetUserId }) => {
+      if (!targetUserId) return;
+      io.to(String(targetUserId)).emit('call_rejected', { callId });
+    });
+
+    socket.on('call_end', ({ callId, targetUserId }) => {
+      if (!targetUserId) return;
+      io.to(String(targetUserId)).emit('call_ended', { callId });
+    });
+
+    socket.on('ice_candidate', ({ callId, targetUserId, candidate }) => {
+      if (!targetUserId) return;
+      io.to(String(targetUserId)).emit('ice_candidate', { callId, candidate });
+    });
+
     socket.on('disconnect', async () => {
       const currentCount = Math.max(0, (userSocketCount.get(userId) || 1) - 1);
       if (currentCount === 0) {

@@ -4,11 +4,12 @@ import { useChatStore } from '../stores/useChatStore'
 import axios from 'axios'
 import { API_URL } from '../config'
 import { useToast } from './Toast'
-import { IconSend, IconPaperclip, IconMic, IconSmile, IconReply, IconEdit, IconTrash, IconX, IconFile, IconMessage } from './QIcons'
+import { IconSend, IconPaperclip, IconMic, IconSmile, IconReply, IconEdit, IconTrash, IconX, IconFile, IconMessage, IconCheckCheck, IconCheck } from './QIcons'
+import EmojiPicker from 'emoji-picker-react'
 
 const QUICK_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '😡'];
 
-export default function ChatRoom({ token, conversationId, user, searchQuery }) {
+export default function ChatRoom({ token, conversationId, user, searchQuery, conversation }) {
   const { addToast, showConfirm } = useToast()
   const [text, setText] = useState('');
   const [typingUsers, setTypingUsers] = useState(new Set());
@@ -20,6 +21,7 @@ export default function ChatRoom({ token, conversationId, user, searchQuery }) {
   const [editingMsgId, setEditingMsgId] = useState(null);
   const [hoveredMsgId, setHoveredMsgId] = useState(null);
   const [emojiPickerMsgId, setEmojiPickerMsgId] = useState(null);
+  const [showInputEmoji, setShowInputEmoji] = useState(false);
 
   // Filter messages based on search query and sort ASC
   const messages = (searchQuery
@@ -167,11 +169,23 @@ export default function ChatRoom({ token, conversationId, user, searchQuery }) {
       }));
     };
 
+    const onMessagesRead = ({ conversationId: cid, userId: readerId }) => {
+      if (cid !== conversationId) return;
+      useChatStore.setState(state => ({
+        messages: state.messages.map(m =>
+          !m.readBy?.includes(readerId)
+            ? { ...m, readBy: [...(m.readBy || []), readerId] }
+            : m
+        )
+      }));
+    };
+
     s.on('new_message', onNew);
     s.on('typing', onTyping);
     s.on('message_updated', onMessageUpdated);
     s.on('message_deleted', onMessageDeleted);
     s.on('message_reacted', onMessageReacted);
+    s.on('messages_read', onMessagesRead);
 
     return () => {
       s.off('new_message', onNew);
@@ -179,6 +193,7 @@ export default function ChatRoom({ token, conversationId, user, searchQuery }) {
       s.off('message_updated', onMessageUpdated);
       s.off('message_deleted', onMessageDeleted);
       s.off('message_reacted', onMessageReacted);
+      s.off('messages_read', onMessagesRead);
     };
   }, [addMessage, conversationId]);
 
@@ -457,9 +472,12 @@ export default function ChatRoom({ token, conversationId, user, searchQuery }) {
     return 'User';
   }
 
-  // Close emoji picker when clicking outside
+  // Close emoji pickers when clicking outside
   useEffect(() => {
-    const handleClickOutside = () => setEmojiPickerMsgId(null);
+    const handleClickOutside = () => {
+      setEmojiPickerMsgId(null);
+      setShowInputEmoji(false);
+    };
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
   }, []);
@@ -652,8 +670,13 @@ export default function ChatRoom({ token, conversationId, user, searchQuery }) {
                       </>
                     )}
 
-                    <div className="message-time" style={{ fontSize: 9, opacity: 0.5, textAlign: 'right', marginTop: 4 }}>
-                      {formatTime(m.createdAt || new Date())}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 4, marginTop: 4 }}>
+                      <span style={{ fontSize: 9, opacity: 0.5 }}>
+                        {formatTime(m.createdAt || new Date())}
+                      </span>
+                      {isMe && !m.deleted && !m.isOptimistic && (
+                        <MessageTick readBy={m.readBy || []} members={conversation?.members || []} myId={user?._id} />
+                      )}
                     </div>
                   </div>
 
@@ -730,10 +753,33 @@ export default function ChatRoom({ token, conversationId, user, searchQuery }) {
             <button className="btn ghost" style={{ fontSize: '0.8rem', padding: '5px 12px' }} onClick={stopRecording}>Stop & Send</button>
           </div>
         ) : (
+          <>
+          <div style={{ position: 'relative' }}>
+            {showInputEmoji && (
+              <div style={{ position: 'absolute', bottom: '100%', right: 0, zIndex: 700, marginBottom: 8 }} onClick={e => e.stopPropagation()}>
+                <EmojiPicker
+                  onEmojiClick={(e) => { setText(t => t + e.emoji); setShowInputEmoji(false); inputRef.current?.focus(); }}
+                  theme="dark"
+                  width={320}
+                  height={380}
+                  searchPlaceholder="Tìm emoji..."
+                  skinTonesDisabled
+                />
+              </div>
+            )}
+          </div>
           <div className="chat-input-controls">
             <input type="file" ref={fileInputRef} style={{ display: 'none' }} onChange={handleFileUpload} />
             <button className="btn-icon-simple" title="Attach file" onClick={() => fileInputRef.current?.click()}><IconPaperclip size={18} /></button>
             <button className="btn-icon-simple" title="Record Voice" onClick={startRecording}><IconMic size={18} /></button>
+            <button
+              className="btn-icon-simple"
+              title="Emoji"
+              onClick={() => setShowInputEmoji(v => !v)}
+              style={{ color: showInputEmoji ? 'var(--accent)' : undefined }}
+            >
+              <IconSmile size={18} />
+            </button>
 
             <input
               ref={inputRef}
@@ -753,8 +799,23 @@ export default function ChatRoom({ token, conversationId, user, searchQuery }) {
               <IconSend size={16} />
             </button>
           </div>
+          </>
         )}
       </div>
     </div>
   );
+}
+
+function MessageTick({ readBy, members, myId }) {
+  const others = (members || []).filter(id => String(id) !== String(myId))
+  const readByOthers = (readBy || []).filter(id => String(id) !== String(myId))
+  const allRead = others.length > 0 && readByOthers.length >= others.length
+
+  if (allRead) {
+    return <IconCheckCheck size={13} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+  }
+  if (readByOthers.length > 0) {
+    return <IconCheckCheck size={13} style={{ color: 'var(--muted)', flexShrink: 0 }} />
+  }
+  return <IconCheck size={13} style={{ color: 'rgba(255,255,255,0.45)', flexShrink: 0 }} />
 }

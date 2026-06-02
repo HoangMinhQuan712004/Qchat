@@ -40,39 +40,35 @@ export default function ChatRoom({ token, conversationId, user, searchQuery, con
   const [isRecording, setIsRecording] = useState(false);
   const audioChunksRef = useRef([]);
 
-  const handleFileUpload = async (e) => {
+  // Pending file: { file, previewUrl, type }
+  const [pendingFile, setPendingFile] = useState(null);
+
+  function handleFileSelect(e) {
     const file = e.target.files[0];
     if (!file) return;
+    let type = 'file';
+    if (file.type.startsWith('image/')) type = 'image';
+    else if (file.type.startsWith('video/')) type = 'video';
+    else if (file.type.startsWith('audio/')) type = 'audio';
+    const previewUrl = (type === 'image' || type === 'video') ? URL.createObjectURL(file) : null;
+    setPendingFile({ file, previewUrl, type, name: file.name });
+    e.target.value = null;
+    setTimeout(() => inputRef.current?.focus(), 0);
+  }
 
+  function removePendingFile() {
+    if (pendingFile?.previewUrl) URL.revokeObjectURL(pendingFile.previewUrl);
+    setPendingFile(null);
+  }
+
+  async function uploadAndSendFile(file, type) {
     const formData = new FormData();
     formData.append('file', file);
-
-    try {
-      const tokenHeader = token ? { headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'multipart/form-data' } } : {};
-      const res = await axios.post(`${API_URL}/upload`, formData, tokenHeader);
-      const { url, mimetype, filename } = res.data;
-
-      let type = 'file';
-      if (mimetype.startsWith('image/')) type = 'image';
-      else if (mimetype.startsWith('video/')) type = 'video';
-      else if (mimetype.startsWith('audio/')) type = 'audio';
-
-      const msgData = {
-        conversationId,
-        text: '',
-        type,
-        attachments: [{ url, name: filename }]
-      };
-
-      if (getSocket()) {
-        getSocket().emit('send_message', msgData);
-      }
-    } catch (err) {
-      console.error(err);
-      addToast('Upload thất bại', 'error');
-    }
-    e.target.value = null;
-  };
+    const tokenHeader = token ? { headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'multipart/form-data' } } : {};
+    const res = await axios.post(`${API_URL}/upload`, formData, tokenHeader);
+    const { url, filename } = res.data;
+    return { url, filename, type };
+  }
 
   const startRecording = async () => {
     try {
@@ -305,8 +301,30 @@ export default function ChatRoom({ token, conversationId, user, searchQuery, con
   // ── Send / Edit ───────────────────────────────────────────────────────────
   async function handleSend(e) {
     if (e) e.preventDefault();
-    if (!text.trim()) return;
+    if (!text.trim() && !pendingFile) return;
     if (!conversationId) return addToast('Chọn một cuộc trò chuyện trước', 'warning');
+
+    // Send pending file first
+    if (pendingFile) {
+      const fileToSend = pendingFile;
+      removePendingFile();
+      try {
+        const { url, filename, type } = await uploadAndSendFile(fileToSend.file, fileToSend.type);
+        const s = getSocket();
+        if (s) {
+          s.emit('send_message', { conversationId, text: text.trim() || '', type, attachments: [{ url, name: filename }] });
+        }
+      } catch (err) {
+        addToast('Upload thất bại: ' + (err.message || ''), 'error');
+        return;
+      }
+      setText('');
+      setReplyToMsg(null);
+      setTimeout(() => { if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; }, 50);
+      return;
+    }
+
+    if (!text.trim()) return;
 
     // Handle edit mode
     if (editingMsgId) {
@@ -578,8 +596,8 @@ export default function ChatRoom({ token, conversationId, user, searchQuery, con
                     </div>
                   )}
 
-                  {/* Bubble */}
-                  <div className="message-bubble">
+                  {/* Bubble — no bg for pure image/video messages */}
+                  <div className={`message-bubble${(m.type === 'image' || m.type === 'video') && !m.text && !m.replyTo ? ' bubble-media' : ''}`}>
                     {/* Reply preview */}
                     {m.replyTo && !m.deleted && (
                       <div className="message-reply-preview">
@@ -692,6 +710,36 @@ export default function ChatRoom({ token, conversationId, user, searchQuery, con
           </div>
         ) : (
           <>
+          {/* File preview bar */}
+          {pendingFile && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              padding: '8px 12px', background: 'var(--card)',
+              border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
+              animation: 'slideDownIn 0.15s ease',
+            }}>
+              {pendingFile.type === 'image' && pendingFile.previewUrl && (
+                <img src={pendingFile.previewUrl} alt="preview" style={{ width: 52, height: 52, objectFit: 'cover', borderRadius: 8, flexShrink: 0 }} />
+              )}
+              {pendingFile.type === 'video' && pendingFile.previewUrl && (
+                <video src={pendingFile.previewUrl} style={{ width: 80, height: 52, objectFit: 'cover', borderRadius: 8, flexShrink: 0 }} />
+              )}
+              {(pendingFile.type === 'file' || pendingFile.type === 'audio') && (
+                <div style={{ width: 40, height: 40, borderRadius: 8, background: 'var(--accent-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <IconFile size={20} style={{ color: 'var(--accent)' }} />
+                </div>
+              )}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: '0.82rem', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{pendingFile.name}</div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>
+                  {pendingFile.type === 'image' ? 'Ảnh' : pendingFile.type === 'video' ? 'Video' : pendingFile.type === 'audio' ? 'Audio' : 'Tệp'}
+                  {' · Nhấn Gửi để gửi'}
+                </div>
+              </div>
+              <button className="btn-icon" onClick={removePendingFile} title="Bỏ file"><IconX size={16} /></button>
+            </div>
+          )}
+
           <div style={{ position: 'relative' }}>
             {showInputEmoji && (
               <div style={{ position: 'absolute', bottom: '100%', right: 0, zIndex: 700, marginBottom: 8 }} onClick={e => e.stopPropagation()}>
@@ -707,7 +755,7 @@ export default function ChatRoom({ token, conversationId, user, searchQuery, con
             )}
           </div>
           <div className="chat-input-controls">
-            <input type="file" ref={fileInputRef} style={{ display: 'none' }} onChange={handleFileUpload} />
+            <input type="file" ref={fileInputRef} style={{ display: 'none' }} onChange={handleFileSelect} />
             <button className="btn-icon-simple" title="Attach file" onClick={() => fileInputRef.current?.click()}><IconPaperclip size={18} /></button>
             <button className="btn-icon-simple" title="Record Voice" onClick={startRecording}><IconMic size={18} /></button>
             <button

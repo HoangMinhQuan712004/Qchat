@@ -2,6 +2,7 @@
 import { getSocket } from '../socketService';
 import { API_URL } from '../config';
 import { useToast } from './Toast';
+import { IconBell, IconInbox } from './QIcons';
 
 export default function NotificationCenter({ token, user, onSelectNotification }) {
   const { addToast } = useToast();
@@ -94,20 +95,20 @@ export default function NotificationCenter({ token, user, onSelectNotification }
 
   return (
     <div className="notif-center" ref={containerRef} style={{ position: 'relative' }}>
-      <button className="btn-icon" onClick={() => setIsOpen(!isOpen)} style={{ position: 'relative', borderRadius: '50%', width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', background: isOpen ? 'rgba(88,101,242,0.15)' : 'rgba(255,255,255,0.05)', border: isOpen ? '1px solid var(--accent)' : '1px solid transparent' }}>
-        🔔
+      <button className="btn-icon" onClick={() => setIsOpen(!isOpen)} style={{ position: 'relative', borderRadius: '50%', width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', background: isOpen ? 'var(--accent-dim)' : 'transparent', border: isOpen ? '1px solid var(--border-hover)' : '1px solid transparent', color: isOpen ? 'var(--accent)' : 'var(--muted)' }}>
+        <IconBell size={18} />
         {unreadCount > 0 && (
-          <span style={{ position: 'absolute', top: -2, right: -2, background: 'var(--danger)', color: 'white', borderRadius: '50%', fontSize: '10px', minWidth: 18, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', border: '2px solid var(--bg-panel)' }}>
+          <span style={{ position: 'absolute', top: -2, right: -2, background: 'var(--danger)', color: 'white', borderRadius: '50%', fontSize: '10px', minWidth: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', border: '2px solid var(--bg-panel)' }}>
             {unreadCount > 99 ? '99+' : unreadCount}
           </span>
         )}
       </button>
 
       {isOpen && (
-        <div style={{ position: 'fixed', top: 60, left: 270, width: 340, maxHeight: '70vh', overflowY: 'auto', background: 'var(--bg-panel)', border: '1px solid var(--border)', borderRadius: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.5)', zIndex: 9999 }} className="custom-scroll">
-          <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, background: 'var(--bg-panel)', zIndex: 1 }}>
-            <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>Thong bao</span>
-            <button onClick={async () => { await fetch(`${API_URL}/notifications/read-all`, { method: 'PUT', headers: authHeader }); fetchNotifications(); }} style={{ fontSize: '0.75rem', background: 'rgba(88,101,242,0.1)', border: 'none', color: 'var(--accent)', cursor: 'pointer', padding: '4px 8px', borderRadius: 4 }}>Doc tat ca</button>
+        <div style={{ position: 'fixed', top: 60, left: 270, width: 340, maxHeight: '70vh', overflowY: 'auto', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-xl)', zIndex: 9999 }} className="custom-scroll">
+          <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, background: 'var(--card)', zIndex: 1 }}>
+            <span style={{ fontWeight: 700, fontSize: '0.875rem' }}>Thông báo</span>
+            <button onClick={async () => { await fetch(`${API_URL}/notifications/read-all`, { method: 'PUT', headers: authHeader }); fetchNotifications(); }} style={{ fontSize: '0.75rem', background: 'var(--accent-dim)', border: 'none', color: 'var(--accent)', cursor: 'pointer', padding: '4px 10px', borderRadius: 'var(--radius-sm)', fontFamily: 'var(--font-sans)', fontWeight: 600 }}>Đọc tất cả</button>
           </div>
 
           {friendRequests.length > 0 && (
@@ -122,7 +123,7 @@ export default function NotificationCenter({ token, user, onSelectNotification }
                 return (
                   <div key={i} style={{ padding: '10px 16px', borderBottom: '1px solid var(--border)', background: 'rgba(88,101,242,0.05)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                      <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg,var(--accent),#7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, flexShrink: 0, fontSize: 15 }}>
+                      <div style={{ width: 36, height: 36, borderRadius: '10px', background: 'linear-gradient(135deg, #0891b2, #22d3ee)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, flexShrink: 0, fontSize: 15 }}>
                         {name.slice(0, 1).toUpperCase()}
                       </div>
                       <div>
@@ -141,9 +142,9 @@ export default function NotificationCenter({ token, user, onSelectNotification }
           )}
 
           {notifications.length === 0 && friendRequests.length === 0 && (
-            <div style={{ padding: 32, textAlign: 'center', opacity: 0.5 }}>
-              <div style={{ fontSize: 32, marginBottom: 8 }}>📭</div>
-              <div style={{ fontSize: '0.85rem' }}>Chua co thong bao</div>
+            <div style={{ padding: 32, textAlign: 'center', opacity: 0.5, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+              <IconInbox size={36} style={{ color: 'var(--muted)' }} />
+              <div style={{ fontSize: '0.85rem' }}>Chưa có thông báo</div>
             </div>
           )}
           {notifications.map(n => (

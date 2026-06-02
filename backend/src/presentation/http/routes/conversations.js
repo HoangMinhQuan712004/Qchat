@@ -74,6 +74,19 @@ router.get('/', expressJwt, async (req, res, next) => {
       }
     }
 
+    // Attach unread count for current user to each conversation
+    const unreadCounts = await Promise.all(
+      uniqueConvs.map(c =>
+        Message.countDocuments({
+          conversationId: c._id,
+          sender: { $ne: userId },
+          readBy: { $nin: [userId] },
+          deleted: { $ne: true }
+        })
+      )
+    );
+    uniqueConvs.forEach((c, i) => { c.unreadCount = unreadCounts[i]; });
+
     res.json({
       conversations: uniqueConvs,
       cursor: results.length ? results[results.length - 1].lastMessageAt : null,

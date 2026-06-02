@@ -1,7 +1,8 @@
-﻿import React, { useEffect, useState } from 'react'
+﻿import React, { useEffect, useRef, useState } from 'react'
 import { API_URL } from '../config'
 import axios from 'axios'
 import { useToast } from '../components/Toast'
+import { IconCamera, IconUser, IconStar, IconBan, IconWallet, IconX } from '../components/QIcons'
 
 export default function Settings({ onClose, user }) {
   const { addToast, showConfirm } = useToast();
@@ -12,10 +13,13 @@ export default function Settings({ onClose, user }) {
     displayName: user?.displayName || user?.username || '',
     username: user?.username || '',
     email: user?.email || '',
-    bio: user?.bio || ''
+    bio: user?.bio || '',
+    avatarUrl: user?.avatarUrl || ''
   })
   const [activeTab, setActiveTab] = useState('account')
   const [saving, setSaving] = useState(false)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const avatarInputRef = useRef(null)
 
   useEffect(() => {
     try { document.body.setAttribute('data-theme', theme) } catch (e) { }
@@ -28,9 +32,39 @@ export default function Settings({ onClose, user }) {
       displayName: user?.displayName || user?.username || '',
       username: user?.username || '',
       email: user?.email || '',
-      bio: user?.bio || ''
+      bio: user?.bio || '',
+      avatarUrl: user?.avatarUrl || ''
     })
   }, [user])
+
+  async function uploadAvatar(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) return addToast('Chỉ hỗ trợ file ảnh', 'error');
+    setUploadingAvatar(true);
+    try {
+      const token = localStorage.getItem('token');
+      const form = new FormData();
+      form.append('file', file);
+      const res = await axios.post(`${API_URL}/upload`, form, {
+        headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'multipart/form-data' }
+      });
+      const newAvatarUrl = res.data.url;
+      // Save to backend immediately
+      await fetch(`${API_URL}/users/me`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+        body: JSON.stringify({ avatarUrl: newAvatarUrl })
+      });
+      setProfile(p => ({ ...p, avatarUrl: newAvatarUrl }));
+      addToast('Đã cập nhật ảnh đại diện!', 'success');
+    } catch (err) {
+      addToast('Upload thất bại: ' + (err.message || 'Lỗi không xác định'), 'error');
+    } finally {
+      setUploadingAvatar(false);
+      e.target.value = null;
+    }
+  }
 
   async function saveProfile() {
     setSaving(true)
@@ -67,29 +101,29 @@ export default function Settings({ onClose, user }) {
               className={`nav-item ${activeTab === 'account' ? 'active' : ''}`}
               onClick={() => setActiveTab('account')}
             >
-              My Account
+              <IconUser size={15} /> My Account
             </button>
             <button
               className={`nav-item ${activeTab === 'appearance' ? 'active' : ''}`}
               onClick={() => setActiveTab('appearance')}
             >
-              Appearance
+              <IconStar size={15} /> Appearance
             </button>
             <button
               className={`nav-item ${activeTab === 'blocked' ? 'active' : ''}`}
               onClick={() => setActiveTab('blocked')}
             >
-              Blocked Users
+              <IconBan size={15} /> Blocked Users
             </button>
             <button
               className={`nav-item ${activeTab === 'wallet' ? 'active' : ''}`}
               onClick={() => setActiveTab('wallet')}
             >
-              Wallet
+              <IconWallet size={15} /> Wallet
             </button>
           </nav>
           <div className="settings-footer">
-            <button className="btn ghost" onClick={onClose} style={{ width: '100%' }}>Close</button>
+            <button className="btn ghost" onClick={onClose} style={{ width: '100%', gap: 8 }}><IconX size={14} /> Close</button>
           </div>
         </div>
 
@@ -100,8 +134,33 @@ export default function Settings({ onClose, user }) {
               <div className="profile-card">
                 <div className="profile-banner" style={{ background: profile.color || 'linear-gradient(90deg, #ff9a5b, #ff7b5b)' }}></div>
                 <div className="profile-header-info">
-                  <div className="profile-avatar-large">
-                    {(profile.displayName || 'U').slice(0, 1).toUpperCase()}
+                  <div style={{ position: 'relative', width: 72, height: 72, flexShrink: 0 }}>
+                    {profile.avatarUrl ? (
+                      <img
+                        src={`${API_URL}${profile.avatarUrl}`}
+                        alt="avatar"
+                        style={{ width: 72, height: 72, borderRadius: '50%', objectFit: 'cover' }}
+                      />
+                    ) : (
+                      <div className="profile-avatar-large">
+                        {(profile.displayName || 'U').slice(0, 1).toUpperCase()}
+                      </div>
+                    )}
+                    <button
+                      title="Đổi ảnh đại diện"
+                      disabled={uploadingAvatar}
+                      onClick={() => avatarInputRef.current?.click()}
+                      style={{
+                        position: 'absolute', bottom: 0, right: 0,
+                        width: 24, height: 24, borderRadius: '50%',
+                        background: 'var(--accent)', border: 'none', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 12, color: '#fff'
+                      }}
+                    >
+                      {uploadingAvatar ? '…' : <IconCamera size={12} />}
+                    </button>
+                    <input ref={avatarInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={uploadAvatar} />
                   </div>
                   <div className="profile-names">
                     <span className="profile-name-main">{profile.displayName}</span>
@@ -131,6 +190,17 @@ export default function Settings({ onClose, user }) {
                       className="input"
                       value={profile.email}
                       onChange={e => setProfile({ ...profile, email: e.target.value })}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Bio</label>
+                    <textarea
+                      className="input"
+                      rows={3}
+                      placeholder="Giới thiệu bản thân..."
+                      value={profile.bio}
+                      onChange={e => setProfile({ ...profile, bio: e.target.value })}
+                      style={{ resize: 'vertical', fontFamily: 'inherit' }}
                     />
                   </div>
 

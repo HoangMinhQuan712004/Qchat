@@ -1,4 +1,5 @@
 import React from 'react';
+import { IconZap, IconLock, IconStar } from './QIcons';
 
 export default function Homepage({ onStartConversation, onOpenSettings, user }) {
     const greeting = getGreeting();
@@ -32,17 +33,17 @@ export default function Homepage({ onStartConversation, onOpenSettings, user }) 
 
             <div className="features-grid">
                 <div className="feature-card">
-                    <div className="feature-icon">🚀</div>
+                    <div className="feature-icon"><IconZap size={22} /></div>
                     <h3>Lightning Fast</h3>
                     <p>Real-time messaging with zero latency.</p>
                 </div>
                 <div className="feature-card">
-                    <div className="feature-icon">🔒</div>
+                    <div className="feature-icon"><IconLock size={22} /></div>
                     <h3>Secure</h3>
                     <p>Your conversations are private and safe.</p>
                 </div>
                 <div className="feature-card">
-                    <div className="feature-icon">✨</div>
+                    <div className="feature-icon"><IconStar size={22} /></div>
                     <h3>Modern Design</h3>
                     <p>A beautiful interface for the best experience.</p>
                 </div>

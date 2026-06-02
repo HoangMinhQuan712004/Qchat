@@ -41,11 +41,18 @@ router.get('/', expressJwt, async (req, res, next) => {
 // PUT /users/me — cập nhật profile
 router.put('/me', expressJwt, async (req, res, next) => {
   try {
-    const { displayName, username, bio } = req.body;
+    const { displayName, username, bio, avatarUrl } = req.body;
     const update = {};
 
     if (displayName !== undefined) update.displayName = String(displayName).trim().slice(0, 50);
     if (bio !== undefined) update.bio = String(bio).trim().slice(0, 200);
+    if (avatarUrl !== undefined) {
+      // Only allow relative upload paths or empty string to clear
+      const url = String(avatarUrl).trim();
+      if (url === '' || /^\/uploads\/[a-zA-Z0-9._-]+$/.test(url)) {
+        update.avatarUrl = url;
+      }
+    }
 
     if (username !== undefined) {
       const newUsername = String(username).trim().slice(0, 30);

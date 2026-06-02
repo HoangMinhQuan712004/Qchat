@@ -17,6 +17,7 @@ import { connectSocket, disconnectSocket, getSocket } from './socketService'
 import { ToastProvider, useToast } from './components/Toast'
 import MediaGallery from './components/MediaGallery'
 import NewsWidget from './components/NewsWidget'
+import { IconArrowLeft, IconSearch, IconX, IconHash } from './components/QIcons'
 
 function AppContent() {
   const [token, setToken] = useState(() => {
@@ -229,31 +230,36 @@ function AppContent() {
                 />
               ) : (
                 <>
-                  <h2 className="chat-header">
+                  <div className="chat-header">
                     {!isSearching ? (
                       <>
-                        <button className="btn-icon" onClick={() => setSelectedConversation(null)} title="Quay về trang chủ" style={{ marginRight: 4, fontSize: 18 }}>←</button>
-                        <span style={{ opacity: 0.6, fontSize: '0.8em', marginRight: 8 }}>{selectedConversation.isGroup ? '#' : '@'}</span>
-                        {getHeaderTitle()}
-                        <div style={{ marginLeft: 'auto', position: 'relative' }}>
-                          <button className="btn-icon" onClick={() => setShowChatSettings(true)}>⚙️</button>
+                        <button className="btn-icon" onClick={() => setSelectedConversation(null)} title="Quay về trang chủ"><IconArrowLeft size={18} /></button>
+                        <div style={{ width: 34, height: 34, borderRadius: 10, background: selectedConversation.isGroup ? 'linear-gradient(135deg, #1e1b4b, #312e81)' : 'linear-gradient(135deg, #0c2d4a, #164e63)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: selectedConversation.isGroup ? '#a5b4fc' : 'var(--accent)', fontSize: 13, fontWeight: 700, flexShrink: 0 }}>
+                          {selectedConversation.isGroup ? <IconHash size={15} /> : (getHeaderTitle() || '?').slice(0,1).toUpperCase()}
+                        </div>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontWeight: 700, fontSize: '0.95rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{getHeaderTitle()}</div>
+                          {selectedConversation.isGroup && <div style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>Group</div>}
+                        </div>
+                        <div style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
+                          <button className="btn-icon" onClick={() => setIsSearching(true)} title="Search messages"><IconSearch size={17} /></button>
                         </div>
                       </>
                     ) : (
                       <div style={{ display: 'flex', alignItems: 'center', width: '100%', gap: 10 }}>
-                        <span style={{ fontSize: '1.2rem' }}>🔍</span>
+                        <IconSearch size={16} style={{ color: 'var(--muted)', flexShrink: 0 }} />
                         <input
                           autoFocus
                           className="search-input"
-                          style={{ flex: 1, background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white' }}
-                          placeholder="Search messages..."
+                          style={{ flex: 1, paddingLeft: 0, background: 'transparent', border: 'none' }}
+                          placeholder="Search messages…"
                           value={searchQuery}
                           onChange={e => setSearchQuery(e.target.value)}
                         />
-                        <button className="btn-icon" onClick={() => { setIsSearching(false); setSearchQuery(''); }}>✕</button>
+                        <button className="btn-icon" onClick={() => { setIsSearching(false); setSearchQuery(''); }}><IconX size={16} /></button>
                       </div>
                     )}
-                  </h2>
+                  </div>
                   <div className="chat-box">
                     <ChatRoom
                       token={token}

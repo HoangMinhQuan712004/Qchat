@@ -4,6 +4,7 @@ import { useChatStore } from '../stores/useChatStore'
 import axios from 'axios'
 import { API_URL } from '../config'
 import { useToast } from './Toast'
+import { IconSend, IconPaperclip, IconMic, IconSmile, IconReply, IconEdit, IconTrash, IconX, IconFile, IconMessage } from './QIcons'
 
 const QUICK_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '😡'];
 
@@ -469,8 +470,8 @@ export default function ChatRoom({ token, conversationId, user, searchQuery }) {
       <div className="messages-list" ref={scrollRef} onScroll={handleScroll} onWheel={handleWheel}>
         {messages.length === 0 && (
           <div className="empty-chat-state">
-            <div className="empty-icon">💬</div>
-            <p>No messages yet. Start the conversation!</p>
+            <div className="empty-icon"><IconMessage size={52} /></div>
+            <p style={{ fontSize: '0.95rem' }}>No messages yet. Start the conversation!</p>
           </div>
         )}
 
@@ -541,7 +542,7 @@ export default function ChatRoom({ token, conversationId, user, searchQuery }) {
                             setEmojiPickerMsgId(prev => prev === m._id ? null : m._id);
                           }}
                         >
-                          😊
+                          <IconSmile size={15} />
                         </button>
                         {showEmojiPicker && (
                           <div
@@ -567,7 +568,7 @@ export default function ChatRoom({ token, conversationId, user, searchQuery }) {
                         title="Reply"
                         onClick={() => handleStartReply(m)}
                       >
-                        ↩️
+                        <IconReply size={15} />
                       </button>
 
                       {/* Edit — own messages only */}
@@ -577,18 +578,18 @@ export default function ChatRoom({ token, conversationId, user, searchQuery }) {
                           title="Edit"
                           onClick={() => handleStartEdit(m)}
                         >
-                          ✏️
+                          <IconEdit size={15} />
                         </button>
                       )}
 
                       {/* Delete — own messages only */}
                       {isMe && (
                         <button
-                          className="message-action-btn"
+                          className="message-action-btn danger"
                           title="Delete"
                           onClick={() => handleDelete(m._id)}
                         >
-                          🗑️
+                          <IconTrash size={15} />
                         </button>
                       )}
                     </div>
@@ -638,7 +639,7 @@ export default function ChatRoom({ token, conversationId, user, searchQuery }) {
                         )}
                         {m.type === 'file' && m.attachments?.[0] && (
                           <a href={`${API_URL}${m.attachments[0].url}`} target="_blank" rel="noreferrer" className="message-file-link">
-                            📄 {m.attachments[0].name || 'Attached File'}
+                            <IconFile size={14} /> {m.attachments[0].name || 'Attached File'}
                           </a>
                         )}
 
@@ -698,17 +699,17 @@ export default function ChatRoom({ token, conversationId, user, searchQuery }) {
         {replyToMsg && !editingMsgId && (
           <div className="message-reply-bar">
             <div className="reply-bar-content">
-              <span className="reply-bar-icon">↩️</span>
-              <div className="reply-bar-text">
+              <span className="reply-bar-icon"><IconReply size={13} /></span>
+              <div className="reply-bar-text" style={{ display: 'flex', flexDirection: 'column', gap: 1, minWidth: 0 }}>
                 <span className="reply-bar-name">{getSenderName(replyToMsg.sender)}</span>
                 <span className="reply-bar-preview">
                   {replyToMsg.text
                     ? (replyToMsg.text.length > 80 ? replyToMsg.text.slice(0, 80) + '…' : replyToMsg.text)
-                    : '📎 Attachment'}
+                    : 'Attachment'}
                 </span>
               </div>
             </div>
-            <button className="reply-bar-close" onClick={() => setReplyToMsg(null)} title="Cancel reply">✕</button>
+            <button className="reply-bar-close" onClick={() => setReplyToMsg(null)} title="Cancel reply"><IconX size={13} /></button>
           </div>
         )}
 
@@ -716,43 +717,41 @@ export default function ChatRoom({ token, conversationId, user, searchQuery }) {
         {editingMsgId && (
           <div className="message-reply-bar edit-bar">
             <div className="reply-bar-content">
-              <span className="reply-bar-icon">✏️</span>
+              <span className="reply-bar-icon"><IconEdit size={13} /></span>
               <span className="reply-bar-name">Editing message</span>
             </div>
-            <button className="reply-bar-close" onClick={() => { setEditingMsgId(null); setText(''); }} title="Cancel edit">✕</button>
+            <button className="reply-bar-close" onClick={() => { setEditingMsgId(null); setText(''); }} title="Cancel edit"><IconX size={13} /></button>
           </div>
         )}
 
         {isRecording ? (
           <div className="recording-ui">
-            <span>🔴 Recording...</span>
-            <button className="btn-icon-simple" onClick={stopRecording}>⏹️ Stop & Send</button>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span className="dot" /> Recording…</span>
+            <button className="btn ghost" style={{ fontSize: '0.8rem', padding: '5px 12px' }} onClick={stopRecording}>Stop & Send</button>
           </div>
         ) : (
           <div className="chat-input-controls">
             <input type="file" ref={fileInputRef} style={{ display: 'none' }} onChange={handleFileUpload} />
-            <button className="btn-icon-simple" title="Attach file" onClick={() => fileInputRef.current?.click()}>📎</button>
-            <button className="btn-icon-simple" title="Record Voice" onClick={startRecording}>🎤</button>
+            <button className="btn-icon-simple" title="Attach file" onClick={() => fileInputRef.current?.click()}><IconPaperclip size={18} /></button>
+            <button className="btn-icon-simple" title="Record Voice" onClick={startRecording}><IconMic size={18} /></button>
 
-            <form style={{ flex: 1, display: 'flex', gap: 10 }} onSubmit={handleSend}>
-              <input
-                ref={inputRef}
-                className="chat-input"
-                value={text}
-                onChange={handleChange}
-                onKeyDown={handleKeyDown}
-                placeholder={
-                  editingMsgId
-                    ? 'Edit message…'
-                    : replyToMsg
-                      ? `Reply to ${getSenderName(replyToMsg.sender)}…`
-                      : `Message ${user?.displayName || '...'}`
-                }
-              />
-              <button type="submit" className="btn-icon send-btn">
-                ➢
-              </button>
-            </form>
+            <input
+              ref={inputRef}
+              className="chat-input"
+              value={text}
+              onChange={handleChange}
+              onKeyDown={handleKeyDown}
+              placeholder={
+                editingMsgId
+                  ? 'Edit message…'
+                  : replyToMsg
+                    ? `Reply to ${getSenderName(replyToMsg.sender)}…`
+                    : `Message ${user?.displayName || '...'}`
+              }
+            />
+            <button type="button" className="send-btn" onClick={handleSend}>
+              <IconSend size={16} />
+            </button>
           </div>
         )}
       </div>

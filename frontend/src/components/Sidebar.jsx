@@ -3,13 +3,22 @@ import { API_URL } from '../config'
 import axios from 'axios'
 import { useToast } from './Toast'
 import NotificationCenter from './NotificationCenter'
+import { getSocket } from '../socketService'
+import ProfileCard from './ProfileCard'
+import {
+  IconSettings, IconLogOut, IconPlus, IconMessage, IconUserPlus,
+  IconTrash, IconBellOff, IconBan, IconUserX, IconMoon, IconSun,
+  IconUsers, IconHash
+} from './QIcons'
 
-export default function Sidebar({ token, user, onStartConversation, onSelectConversation, onOpenSettings, onOpenGroupModal, onGroupDeleted, onLogout, onGoHome }) {
+export default function Sidebar({ token, user, selectedConversation, onStartConversation, onSelectConversation, onOpenSettings, onOpenGroupModal, onGroupDeleted, onLogout, onGoHome }) {
   const [users, setUsers] = useState([])
   const [conversations, setConversations] = useState([])
   const [groups, setGroups] = useState([])
   const [friends, setFriends] = useState([])
   const [groupToDelete, setGroupToDelete] = useState(null)
+  const [unreadCounts, setUnreadCounts] = useState({})
+  const [profileUser, setProfileUser] = useState(null)
   const { addToast } = useToast()
 
   // Search State
@@ -22,10 +31,42 @@ export default function Sidebar({ token, user, onStartConversation, onSelectConv
   useEffect(() => {
     if (!token) return;
     axios.get(`${API_URL}/users`, { headers: { Authorization: 'Bearer ' + token } }).then(r => setUsers(r.data.users)).catch(() => { })
-    axios.get(`${API_URL}/conversations`, { headers: { Authorization: 'Bearer ' + token } }).then(r => setConversations(r.data.conversations)).catch(() => { })
+    axios.get(`${API_URL}/conversations`, { headers: { Authorization: 'Bearer ' + token } }).then(r => {
+      const convs = r.data.conversations || [];
+      setConversations(convs);
+      const counts = {};
+      convs.forEach(c => { if (c.unreadCount) counts[c._id] = c.unreadCount; });
+      setUnreadCounts(counts);
+    }).catch(() => { })
     axios.get(`${API_URL}/friends`, { headers: { Authorization: 'Bearer ' + token } }).then(r => setFriends(r.data.friends)).catch(() => { })
     axios.get(`${API_URL}/groups`, { headers: { Authorization: 'Bearer ' + token } }).then(r => setGroups(r.data.groups)).catch(() => { })
   }, [token])
+
+  // Realtime: increment unread when new message arrives in a non-active conversation
+  useEffect(() => {
+    const s = getSocket();
+    if (!s) return;
+    const onNewMessage = ({ message }) => {
+      const convId = message.conversationId;
+      if (convId === selectedConversation?._id) return;
+      const senderId = typeof message.sender === 'object' ? message.sender?._id : message.sender;
+      if (String(senderId) === String(user?._id)) return;
+      setUnreadCounts(prev => ({ ...prev, [convId]: (prev[convId] || 0) + 1 }));
+      setConversations(prev => {
+        const updated = prev.map(c => c._id === convId ? { ...c, lastMessage: message.text || '📎', lastMessageAt: message.createdAt } : c);
+        return [...updated].sort((a, b) => new Date(b.lastMessageAt || 0) - new Date(a.lastMessageAt || 0));
+      });
+    };
+    s.on('new_message', onNewMessage);
+    return () => s.off('new_message', onNewMessage);
+  }, [selectedConversation, user])
+
+  // Reset unread when opening a conversation
+  useEffect(() => {
+    if (selectedConversation?._id) {
+      setUnreadCounts(prev => ({ ...prev, [selectedConversation._id]: 0 }));
+    }
+  }, [selectedConversation])
 
   useEffect(() => {
     try { document.body.setAttribute('data-theme', theme) } catch (e) { }
@@ -245,8 +286,8 @@ export default function Sidebar({ token, user, onStartConversation, onSelectConv
       {/* Fixed Header */}
       <div style={{ padding: 16, paddingBottom: 0 }}>
         <div className="sidebar-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <h4 style={{ margin: 0, cursor: 'pointer', userSelect: 'none' }} onClick={onGoHome}>QChat</h4>
-          <div style={{ display: 'flex', gap: 5 }}>
+          <span className="sidebar-brand" onClick={onGoHome}>Qchat</span>
+          <div style={{ display: 'flex', gap: 4 }}>
             <NotificationCenter token={token} user={user} onSelectNotification={(n) => {
               if (n.relatedId) {
                 // If it's a message, we might want to select the conversation
@@ -260,7 +301,7 @@ export default function Sidebar({ token, user, onStartConversation, onSelectConv
                 }
               }
             }} />
-            <button className="btn-icon" onClick={() => onOpenGroupModal?.()} title="Create Group">➕</button>
+            <button className="btn-icon" onClick={() => onOpenGroupModal?.()} title="Create Group"><IconPlus size={16} /></button>
           </div>
         </div>
 
@@ -281,9 +322,7 @@ export default function Sidebar({ token, user, onStartConversation, onSelectConv
         {/* Search Results */}
         {searchTerm && (
           <section>
-            <h4 style={{ marginTop: 0, marginBottom: 8, fontSize: '0.85rem', color: 'var(--muted)', textTransform: 'uppercase' }}>
-              Search Results
-            </h4>
+            <div className="sidebar-section-label">Search Results</div>
             {filteredUsers.length === 0 ? (
               <div className="muted-text" style={{ fontSize: '0.8rem', padding: 4 }}>No results found</div>
             ) : (
@@ -291,18 +330,18 @@ export default function Sidebar({ token, user, onStartConversation, onSelectConv
                 const isFriend = friends.some(f => f._id === u._id);
                 return (
                   <div key={u._id} className="conv-row">
-                    <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                    <div style={{ display: 'flex', gap: 10, alignItems: 'center', flex: 1, minWidth: 0 }}>
                       <div className="avatar small">{(u.displayName || u.username || 'U').slice(0, 1).toUpperCase()}</div>
                       <div>
                         <div style={{ fontWeight: 600 }}>{u.displayName || u.username}</div>
                       </div>
                     </div>
                     <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                      <button className="btn-icon" title="Message" onClick={() => onStartConversation([u._id])}>💬</button>
+                      <button className="btn-icon" title="Message" onClick={() => onStartConversation([u._id])}><IconMessage size={15} /></button>
                       {isFriend ? (
-                        <span style={{ fontSize: 12, color: 'var(--success)', padding: '0 8px' }}>✓ Friend</span>
+                        <span style={{ fontSize: 11, color: 'var(--success)', padding: '0 6px', fontWeight: 600 }}>Friends</span>
                       ) : (
-                        <button className="btn-icon" title="Add Friend" onClick={() => handleAddFriend(u)}>➕</button>
+                        <button className="btn-icon" title="Add Friend" onClick={() => handleAddFriend(u)}><IconUserPlus size={15} /></button>
                       )}
                     </div>
                   </div>
@@ -316,38 +355,34 @@ export default function Sidebar({ token, user, onStartConversation, onSelectConv
         {/* Direct Messages */}
         {!searchTerm && (
           <section>
-            <h4 style={{ marginTop: 8, marginBottom: 8, fontSize: '0.85rem', color: 'var(--muted)', textTransform: 'uppercase' }}>
-              Direct Messages
-            </h4>
+            <div className="sidebar-section-label">Direct Messages</div>
             {directMessages.length === 0 && <div className="muted-text" style={{ fontSize: '0.8rem', padding: 4 }}>No chats yet</div>}
-            {directMessages.map(c => (
-              <div key={c._id} className="conv-row" onClick={() => onSelectConversation(c)}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div className="avatar">{(getTitle(c) || 'U').slice(0, 1).toUpperCase()}</div>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{getTitle(c)}</div>
-                    <div style={{ fontSize: 12, color: 'var(--muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.lastMessage || ''}</div>
+            {directMessages.map(c => {
+              const unread = unreadCounts[c._id] || 0;
+              return (
+                <div key={c._id} className="conv-row" onClick={() => onSelectConversation(c)}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
+                    <div className="avatar">{(getTitle(c) || 'U').slice(0, 1).toUpperCase()}</div>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ fontWeight: unread > 0 ? 700 : 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{getTitle(c)}</div>
+                      <div style={{ fontSize: 12, color: unread > 0 ? 'var(--text)' : 'var(--muted)', fontWeight: unread > 0 ? 600 : 400, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.lastMessage || ''}</div>
+                    </div>
                   </div>
+                  {unread > 0 && <span className="unread-badge">{unread > 99 ? '99+' : unread}</span>}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </section>
         )}
 
         {/* Groups */}
         {!searchTerm && (
           <section>
-            <h4 style={{ marginTop: 24, marginBottom: 8, fontSize: '0.85rem', color: 'var(--muted)', textTransform: 'uppercase' }}>
-              Groups
-            </h4>
+            <div className="sidebar-section-label">Groups</div>
             {groupChats.length === 0 && <div className="muted-text" style={{ fontSize: '0.8rem', padding: 4 }}>No groups</div>}
             {groupChats.map(c => {
-              // Ensure robust comparison between IDs
               const groupInfo = groups.find(g => String(g.conversationId) === String(c._id));
-
-              // Debug logging (temporary)
-              // console.log('Checking group:', c.title, c._id, 'Found info:', groupInfo, 'Creator:', groupInfo?.createdBy, 'Me:', user?._id);
-
+              const unread = unreadCounts[c._id] || 0;
               return (
                 <div
                   key={c._id}
@@ -355,13 +390,14 @@ export default function Sidebar({ token, user, onStartConversation, onSelectConv
                   onClick={() => onSelectConversation(c)}
                   onContextMenu={(e) => handleContextMenu(e, groupInfo, 'group')}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
                     <div className="avatar group">#</div>
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{getTitle(c)}</div>
-                      <div style={{ fontSize: 12, color: 'var(--muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.lastMessage || ''}</div>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ fontWeight: unread > 0 ? 700 : 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{getTitle(c)}</div>
+                      <div style={{ fontSize: 12, color: unread > 0 ? 'var(--text)' : 'var(--muted)', fontWeight: unread > 0 ? 600 : 400, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.lastMessage || ''}</div>
                     </div>
                   </div>
+                  {unread > 0 && <span className="unread-badge">{unread > 99 ? '99+' : unread}</span>}
                 </div>
               );
             })}
@@ -371,24 +407,22 @@ export default function Sidebar({ token, user, onStartConversation, onSelectConv
         {/* Friends */}
         {!searchTerm && (
           <section>
-            <h4 style={{ marginTop: 24, marginBottom: 8, fontSize: '0.85rem', color: 'var(--muted)', textTransform: 'uppercase' }}>
-              Friends
-            </h4>
+            <div className="sidebar-section-label">Friends</div>
             {friends.map(u => (
               <div
                 key={u._id}
                 className="conv-row"
                 onContextMenu={(e) => handleContextMenu(e, u, 'friend')}
               >
-                <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center', cursor: 'pointer' }} onClick={() => setProfileUser(u)}>
                   <div className="avatar small">{(u.displayName || u.username || 'U').slice(0, 1).toUpperCase()}</div>
                   <div>
                     <div style={{ fontWeight: 600 }}>{u.displayName || u.username}</div>
-                    <div style={{ fontSize: 12, color: 'var(--muted)' }}>{u.isOnline ? 'Online' : 'Offline'}</div>
+                    <div style={{ fontSize: 12, color: u.isOnline ? 'var(--success)' : 'var(--muted)' }}>{u.isOnline ? '● Online' : '○ Offline'}</div>
                   </div>
                 </div>
                 <div>
-                  <button className="btn-icon" title="Message" onClick={() => onStartConversation([u._id])}>💬</button>
+                  <button className="btn-icon" title="Message" onClick={() => onStartConversation([u._id])}><IconMessage size={15} /></button>
                 </div>
               </div>
             ))}
@@ -409,8 +443,8 @@ export default function Sidebar({ token, user, onStartConversation, onSelectConv
             </div>
           </div>
           <div style={{ display: 'flex' }}>
-            <button className="btn-icon" onClick={() => onOpenSettings?.()} title="Settings">⚙️</button>
-            <button className="btn-icon" onClick={onLogout} title="Logout">🚪</button>
+            <button className="btn-icon" onClick={() => onOpenSettings?.()} title="Settings"><IconSettings size={16} /></button>
+            <button className="btn-icon" onClick={onLogout} title="Logout"><IconLogOut size={16} /></button>
           </div>
         </div>
       </div>
@@ -436,13 +470,13 @@ export default function Sidebar({ token, user, onStartConversation, onSelectConv
 
           {/* GROUP ACTIONS */}
           {contextMenu.type === 'group' && contextMenu.data && user && String(contextMenu.data.createdBy) === String(user._id) && (
-            <div className="context-menu-item" onClick={() => { setGroupToDelete(contextMenu.data._id); setContextMenu(null); }}>
-              🗑️ Delete Group
+            <div className="context-menu-item danger" onClick={() => { setGroupToDelete(contextMenu.data._id); setContextMenu(null); }}>
+              <IconTrash size={14} /> Delete Group
             </div>
           )}
           {contextMenu.type === 'group' && (
             <div className="context-menu-item" onClick={() => { addToast('Đã tắt thông báo nhóm này', 'success'); setContextMenu(null); }}>
-              🔕 Mute Notifications
+              <IconBellOff size={14} /> Mute Notifications
             </div>
           )}
 
@@ -450,18 +484,27 @@ export default function Sidebar({ token, user, onStartConversation, onSelectConv
           {contextMenu.type === 'friend' && (
             <>
               <div className="context-menu-item" onClick={() => onStartConversation([contextMenu.data._id])}>
-                💬 Message
+                <IconMessage size={14} /> Message
               </div>
               <div className="context-menu-item" onClick={handleUnfriend}>
-                ❌ Unfriend
+                <IconUserX size={14} /> Unfriend
               </div>
-              <div className="context-menu-item" style={{ color: 'var(--danger)' }} onClick={handleBlock}>
-                🚫 Block
+              <div className="context-menu-item danger" onClick={handleBlock}>
+                <IconBan size={14} /> Block
               </div>
             </>
           )}
 
         </div>
+      )}
+
+      {/* Profile Card */}
+      {profileUser && (
+        <ProfileCard
+          user={profileUser}
+          onClose={() => setProfileUser(null)}
+          onMessage={() => { onStartConversation([profileUser._id]); setProfileUser(null); }}
+        />
       )}
 
       {/* Delete Confirmation Modal */}

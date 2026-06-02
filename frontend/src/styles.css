@@ -1854,20 +1854,19 @@ img, video { display: block; max-width: 100%; }
 .message-actions {
   display: none;
   position: absolute;
-  top: -36px;
-  right: 0;
+  top: -32px;
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-md);
-  z-index: 100;
-  animation: scaleIn 0.12s ease;
+  z-index: 200;
 }
 
-.message-row:hover .message-actions { display: flex; }
+.message-row:hover .message-actions,
+.message-actions.visible { display: flex; }
 
-.message-row.me .message-actions  { right: 0; left: auto; }
-.message-row.other .message-actions { left: 0; right: auto; }
+.message-row.me .message-actions  { right: 4px; left: auto; }
+.message-row.other .message-actions { left: 4px; right: auto; }
 
 .message-action-btn {
   background: transparent;

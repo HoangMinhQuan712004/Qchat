@@ -19,7 +19,6 @@ export default function ChatRoom({ token, conversationId, user, searchQuery, con
   // New feature states
   const [replyToMsg, setReplyToMsg] = useState(null);
   const [editingMsgId, setEditingMsgId] = useState(null);
-  const [hoveredMsgId, setHoveredMsgId] = useState(null);
   const [emojiPickerMsgId, setEmojiPickerMsgId] = useState(null);
   const [showInputEmoji, setShowInputEmoji] = useState(false);
 
@@ -557,7 +556,6 @@ export default function ChatRoom({ token, conversationId, user, searchQuery, con
             : null;
           const showAvatar = !isMe && (i === 0 || String(prevSenderId) !== String(senderId));
 
-          const isHovered = hoveredMsgId === m._id;
           const showEmojiPicker = emojiPickerMsgId === m._id;
 
           // Aggregate reactions: { emoji: count }
@@ -578,11 +576,7 @@ export default function ChatRoom({ token, conversationId, user, searchQuery, con
                 </div>
               )}
 
-              <div
-                className={`message-row ${isMe ? 'me' : 'other'}`}
-                onMouseEnter={() => setHoveredMsgId(m._id)}
-                onMouseLeave={() => setHoveredMsgId(null)}
-              >
+              <div className={`message-row ${isMe ? 'me' : 'other'}`}>
                 {/* Avatar placeholder (other users) */}
                 {!isMe && (
                   <div style={{ width: 32, flexShrink: 0, display: 'flex', alignItems: 'flex-end', paddingBottom: 2 }}>
@@ -603,9 +597,9 @@ export default function ChatRoom({ token, conversationId, user, searchQuery, con
                     </span>
                   )}
 
-                  {/* Action bar */}
-                  {(isHovered || showEmojiPicker) && !m.deleted && (
-                    <div className={`message-actions ${isMe ? 'actions-me' : 'actions-other'}`}>
+                  {/* Action bar — always in DOM, CSS controls visibility */}
+                  {!m.deleted && (
+                    <div className={`message-actions ${isMe ? 'actions-me' : 'actions-other'}${showEmojiPicker ? ' visible' : ''}`}>
                       <div style={{ position: 'relative', display: 'inline-block' }}>
                         <button className="message-action-btn" title="React" onClick={(e) => { e.stopPropagation(); setEmojiPickerMsgId(prev => prev === m._id ? null : m._id); }}>
                           <Smile size={15} />

@@ -531,123 +531,73 @@ export default function ChatRoom({ token, conversationId, user, searchQuery, con
               <div
                 className={`message-row ${isMe ? 'me' : 'other'}`}
                 onMouseEnter={() => setHoveredMsgId(m._id)}
-                onMouseLeave={() => { setHoveredMsgId(null); }}
+                onMouseLeave={() => setHoveredMsgId(null)}
               >
-                {/* Avatar (other users) */}
+                {/* Avatar placeholder (other users) */}
                 {!isMe && (
-                  <div className="message-avatar" style={{ width: 40, marginRight: 8, flexShrink: 0 }}>
-                    {showAvatar ? (
-                      <div className="avatar small" style={{ width: 36, height: 36 }}>
-                        {getSenderName(m.sender).slice(0, 1).toUpperCase()}
-                      </div>
-                    ) : <div style={{ width: 36 }} />}
+                  <div style={{ width: 32, flexShrink: 0, display: 'flex', alignItems: 'flex-end', paddingBottom: 2 }}>
+                    {showAvatar
+                      ? <div className="avatar small" style={{ width: 32, height: 32, borderRadius: 8, fontSize: '0.75rem' }}>{getSenderName(m.sender).slice(0, 1).toUpperCase()}</div>
+                      : <div style={{ width: 32 }} />
+                    }
                   </div>
                 )}
 
-                {/* Bubble + Actions wrapper */}
-                <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start' }}>
+                {/* Bubble column */}
+                <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start', maxWidth: '72%' }}>
 
-                  {/* Action bar — shown on hover, above the bubble */}
+                  {/* Sender name ABOVE bubble — outside, no wrapping */}
+                  {!isMe && showAvatar && (
+                    <span className="message-sender-name">
+                      {getSenderName(m.sender)}
+                    </span>
+                  )}
+
+                  {/* Action bar */}
                   {isHovered && !m.deleted && (
                     <div className={`message-actions ${isMe ? 'actions-me' : 'actions-other'}`}>
-                      {/* React */}
                       <div style={{ position: 'relative', display: 'inline-block' }}>
-                        <button
-                          className="message-action-btn"
-                          title="React"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setEmojiPickerMsgId(prev => prev === m._id ? null : m._id);
-                          }}
-                        >
+                        <button className="message-action-btn" title="React" onClick={(e) => { e.stopPropagation(); setEmojiPickerMsgId(prev => prev === m._id ? null : m._id); }}>
                           <IconSmile size={15} />
                         </button>
                         {showEmojiPicker && (
-                          <div
-                            className="emoji-picker-wrapper"
-                            onClick={e => e.stopPropagation()}
-                          >
+                          <div className="emoji-picker-wrapper" onClick={e => e.stopPropagation()}>
                             {QUICK_EMOJIS.map(emoji => (
-                              <button
-                                key={emoji}
-                                className="emoji-option-btn"
-                                onClick={() => handleReact(m._id, emoji)}
-                              >
-                                {emoji}
-                              </button>
+                              <button key={emoji} className="emoji-option-btn" onClick={() => handleReact(m._id, emoji)}>{emoji}</button>
                             ))}
                           </div>
                         )}
                       </div>
-
-                      {/* Reply */}
-                      <button
-                        className="message-action-btn"
-                        title="Reply"
-                        onClick={() => handleStartReply(m)}
-                      >
-                        <IconReply size={15} />
-                      </button>
-
-                      {/* Edit — own messages only */}
+                      <button className="message-action-btn" title="Reply" onClick={() => handleStartReply(m)}><IconReply size={15} /></button>
                       {isMe && m.type === 'text' && (
-                        <button
-                          className="message-action-btn"
-                          title="Edit"
-                          onClick={() => handleStartEdit(m)}
-                        >
-                          <IconEdit size={15} />
-                        </button>
+                        <button className="message-action-btn" title="Edit" onClick={() => handleStartEdit(m)}><IconEdit size={15} /></button>
                       )}
-
-                      {/* Delete — own messages only */}
                       {isMe && (
-                        <button
-                          className="message-action-btn danger"
-                          title="Delete"
-                          onClick={() => handleDelete(m._id)}
-                        >
-                          <IconTrash size={15} />
-                        </button>
+                        <button className="message-action-btn danger" title="Delete" onClick={() => handleDelete(m._id)}><IconTrash size={15} /></button>
                       )}
                     </div>
                   )}
 
-                  {/* Message bubble */}
+                  {/* Bubble */}
                   <div className="message-bubble">
-                    {!isMe && showAvatar && (
-                      <div className="message-sender-name" style={{ fontSize: 10, opacity: 0.7, marginBottom: 4 }}>
-                        {getSenderName(m.sender)}
-                      </div>
-                    )}
-
-                    {/* Reply preview inside bubble */}
+                    {/* Reply preview */}
                     {m.replyTo && !m.deleted && (
                       <div className="message-reply-preview">
-                        <span className="reply-preview-name">
-                          {getSenderName(m.replyTo.sender)}
-                        </span>
+                        <span className="reply-preview-name">{getSenderName(m.replyTo.sender)}</span>
                         <span className="reply-preview-text">
-                          {m.replyTo.text ? (m.replyTo.text.length > 60 ? m.replyTo.text.slice(0, 60) + '…' : m.replyTo.text) : '📎 Attachment'}
+                          {m.replyTo.text ? (m.replyTo.text.length > 60 ? m.replyTo.text.slice(0, 60) + '…' : m.replyTo.text) : 'Attachment'}
                         </span>
                       </div>
                     )}
 
-                    {/* Deleted state */}
                     {m.deleted ? (
-                      <div className="message-deleted">
-                        <em>Message deleted</em>
-                      </div>
+                      <div className="message-deleted"><em>Tin nhắn đã bị xóa</em></div>
                     ) : (
                       <>
                         {m.type === 'text' && <div className="message-text">{m.text}</div>}
                         {m.type === 'image' && m.attachments?.[0] && (
-                          <img
-                            src={`${API_URL}${m.attachments[0].url}`}
-                            className="message-image"
-                            onClick={() => window.open(`${API_URL}${m.attachments[0].url}`, '_blank')}
-                            alt="attachment"
-                          />
+                          <img src={`${API_URL}${m.attachments[0].url}`} className="message-image"
+                            onClick={() => window.open(`${API_URL}${m.attachments[0].url}`, '_blank')} alt="attachment" />
                         )}
                         {m.type === 'video' && m.attachments?.[0] && (
                           <video src={`${API_URL}${m.attachments[0].url}`} controls className="message-video" />
@@ -660,36 +610,24 @@ export default function ChatRoom({ token, conversationId, user, searchQuery, con
                             <IconFile size={14} /> {m.attachments[0].name || 'Attached File'}
                           </a>
                         )}
-
-                        {/* Edited label */}
-                        {m.edited && (
-                          <span className="message-edited-label" style={{ fontSize: 9, opacity: 0.5, marginLeft: 4 }}>
-                            (edited)
-                          </span>
-                        )}
+                        {m.edited && <span style={{ fontSize: 9, opacity: 0.45, marginLeft: 4 }}>(edited)</span>}
                       </>
                     )}
 
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 4, marginTop: 4 }}>
-                      <span style={{ fontSize: 9, opacity: 0.5 }}>
-                        {formatTime(m.createdAt || new Date())}
-                      </span>
+                    {/* Time + tick */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 3, marginTop: 3 }}>
+                      <span style={{ fontSize: '0.62rem', opacity: 0.5, whiteSpace: 'nowrap' }}>{formatTime(m.createdAt || new Date())}</span>
                       {isMe && !m.deleted && !m.isOptimistic && (
                         <MessageTick readBy={m.readBy || []} members={conversation?.members || []} myId={user?._id} />
                       )}
                     </div>
                   </div>
 
-                  {/* Reaction counts */}
+                  {/* Reactions */}
                   {reactionEntries.length > 0 && (
                     <div className="message-reactions">
                       {reactionEntries.map(([emoji, count]) => (
-                        <button
-                          key={emoji}
-                          className="reaction-btn"
-                          onClick={() => handleReact(m._id, emoji)}
-                          title={`${count} reaction${count > 1 ? 's' : ''}`}
-                        >
+                        <button key={emoji} className="reaction-btn" onClick={() => handleReact(m._id, emoji)} title={`${count} reaction${count > 1 ? 's' : ''}`}>
                           {emoji} {count > 1 && <span className="reaction-count">{count}</span>}
                         </button>
                       ))}

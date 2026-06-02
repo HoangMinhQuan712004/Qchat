@@ -433,13 +433,16 @@ export default function Sidebar({ token, user, selectedConversation, onStartConv
       {/* Footer: User Profile */}
       <div className="sidebar-footer" style={{ padding: 16 }}>
         <div className="user-profile" style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-            <div className="avatar" style={{ width: 32, height: 32, fontSize: 14 }}>
-              {(user?.displayName || user?.username || 'U').slice(0, 1).toUpperCase()}
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center', minWidth: 0, flex: 1 }}>
+            <div className="avatar" style={{ width: 32, height: 32, fontSize: 14, flexShrink: 0, overflow: 'hidden' }}>
+              {user?.avatarUrl
+                ? <img src={`${API_URL}${user.avatarUrl}`} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                : (user?.displayName || user?.username || 'U').slice(0, 1).toUpperCase()
+              }
             </div>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{user?.displayName || user?.username}</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>#{user?._id?.slice(-4)}</div>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <div style={{ fontWeight: 700, fontSize: '0.875rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user?.displayName || user?.username}</div>
+              <div style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>#{user?._id?.slice(-4)}</div>
             </div>
           </div>
           <div style={{ display: 'flex' }}>

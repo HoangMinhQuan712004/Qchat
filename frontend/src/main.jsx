@@ -234,7 +234,11 @@ function AppContent() {
           )}
 
           {showSettings ? (
-            <Settings onClose={() => setShowSettings(false)} user={user} />
+            <Settings
+              onClose={() => setShowSettings(false)}
+              user={user}
+              onUserUpdate={(updates) => setUser(u => ({ ...u, ...updates }))}
+            />
           ) : (
             <>
               {/* Removed GroupList as it's redundant */}

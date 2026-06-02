@@ -396,11 +396,12 @@ img, video { display: block; max-width: 100%; }
 /* Message rows */
 .message-row {
   display: flex;
-  gap: var(--space-sm);
+  gap: 8px;
   width: 100%;
   max-width: 100%;
   animation: fadeInUp 0.18s ease;
   position: relative;
+  align-items: flex-end;
 }
 
 .message-row.me {
@@ -422,16 +423,18 @@ img, video { display: block; max-width: 100%; }
 
 /* Message bubble */
 .message-bubble {
-  padding: 9px 14px;
+  padding: 8px 12px 6px;
   border-radius: var(--radius-lg);
   position: relative;
-  word-wrap: break-word;
   word-break: break-word;
-  max-width: 72%;
-  min-width: 60px;
+  overflow-wrap: anywhere;
   transition: box-shadow var(--transition-fast);
   line-height: 1.55;
-  font-size: 0.9375rem;
+  font-size: 0.9rem;
+  /* Fit content width, wrap only when exceeds parent */
+  display: block;
+  width: max-content;
+  max-width: 100%;
 }
 
 .message-row.me .message-bubble {
@@ -501,6 +504,12 @@ img, video { display: block; max-width: 100%; }
   font-weight: 700;
   margin-bottom: 3px;
   color: var(--accent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  display: block;
+  padding-left: 2px;
 }
 
 .message-text { line-height: 1.55; }
@@ -1393,14 +1402,14 @@ img, video { display: block; max-width: 100%; }
 /* Toast stack */
 .toast-container {
   position: fixed;
-  bottom: 24px;
-  right: 24px;
+  top: 20px;
+  right: 20px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   z-index: 10000;
   pointer-events: none;
-  max-width: 340px;
+  max-width: 320px;
 }
 
 .toast {
@@ -1414,7 +1423,7 @@ img, video { display: block; max-width: 100%; }
   box-shadow: var(--shadow-md);
   font-size: 0.875rem;
   line-height: 1.45;
-  animation: slideUpIn 0.3s ease-out;
+  animation: slideIn 0.25s ease-out;
   cursor: pointer;
   border-left-width: 3px;
   transition: opacity var(--transition-fast);
@@ -1913,8 +1922,8 @@ img, video { display: block; max-width: 100%; }
   to   { transform: translateX(0);    opacity: 1; }
 }
 
-/* Ensure GroupInfoPanel doesn't overflow chat area */
-.chat-box { position: relative; overflow: hidden; }
+/* chat-box layout */
+.chat-box { position: relative; }
 
 .recording-ui .dot {
   display: inline-block;

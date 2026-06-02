@@ -1,11 +1,16 @@
 const express = require('express');
 const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
+const { v2: cloudinary } = require('cloudinary');
 const expressJwt = require('../../../infrastructure/middleware/jwt');
 const { uploadLimiter } = require('../../../infrastructure/middleware/rateLimiter');
 
 const router = express.Router();
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key:    process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 const ALLOWED_MIME_TYPES = new Set([
   'image/jpeg', 'image/png', 'image/gif', 'image/webp',
@@ -17,22 +22,9 @@ const ALLOWED_MIME_TYPES = new Set([
   'text/plain',
 ]);
 
-const uploadDir = path.join(__dirname, '../../../../uploads');
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadDir),
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    // Chỉ lấy extension, không giữ tên gốc để tránh path traversal
-    const ext = path.extname(file.originalname).toLowerCase().replace(/[^a-z0-9.]/g, '');
-    cb(null, uniqueSuffix + ext);
-  },
-});
-
 const upload = multer({
-  storage,
-  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 50 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     if (!ALLOWED_MIME_TYPES.has(file.mimetype)) {
       return cb(new Error(`Loại file không được phép: ${file.mimetype}`));
@@ -41,19 +33,41 @@ const upload = multer({
   },
 });
 
-router.post('/', expressJwt, uploadLimiter, upload.single('file'), (req, res, next) => {
+function uploadToCloudinary(buffer, mimetype) {
+  const resourceType = mimetype.startsWith('video/') ? 'video'
+    : mimetype.startsWith('audio/') ? 'video'  // Cloudinary dùng 'video' cho audio
+    : mimetype.startsWith('image/') ? 'image'
+    : 'raw';
+
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      { folder: 'qchat', resource_type: resourceType },
+      (error, result) => {
+        if (error) reject(error);
+        else resolve(result);
+      }
+    );
+    stream.end(buffer);
+  });
+}
+
+router.post('/', expressJwt, uploadLimiter, upload.single('file'), async (req, res, next) => {
   if (!req.file) {
     return res.status(400).json({ message: 'Không có file được upload' });
   }
-  res.json({
-    url: `/uploads/${req.file.filename}`,
-    filename: req.file.originalname,
-    size: req.file.size,
-    mimetype: req.file.mimetype,
-  });
+  try {
+    const result = await uploadToCloudinary(req.file.buffer, req.file.mimetype);
+    res.json({
+      url:      result.secure_url,
+      filename: req.file.originalname,
+      size:     req.file.size,
+      mimetype: req.file.mimetype,
+    });
+  } catch (err) {
+    next(err);
+  }
 });
 
-// Multer error handler
 router.use((err, req, res, next) => {
   if (err instanceof multer.MulterError || err.message?.includes('Loại file')) {
     return res.status(400).json({ message: err.message });

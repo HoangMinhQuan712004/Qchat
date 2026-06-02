@@ -47,9 +47,10 @@ router.put('/me', expressJwt, async (req, res, next) => {
     if (displayName !== undefined) update.displayName = String(displayName).trim().slice(0, 50);
     if (bio !== undefined) update.bio = String(bio).trim().slice(0, 200);
     if (avatarUrl !== undefined) {
-      // Only allow relative upload paths or empty string to clear
       const url = String(avatarUrl).trim();
-      if (url === '' || /^\/uploads\/[a-zA-Z0-9._-]+$/.test(url)) {
+      const isCloudinary = url.startsWith('https://res.cloudinary.com/');
+      const isLocalUpload = /^\/uploads\/[a-zA-Z0-9._-]+$/.test(url);
+      if (url === '' || isCloudinary || isLocalUpload) {
         update.avatarUrl = url;
       }
     }

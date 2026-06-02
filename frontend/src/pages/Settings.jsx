@@ -143,16 +143,16 @@ export default function Settings({ onClose, user, onUserUpdate }) {
                 <div className="profile-banner" style={{ background: profile.color || 'linear-gradient(90deg, #ff9a5b, #ff7b5b)' }}></div>
                 <div className="profile-header-info">
                   <div style={{ position: 'relative', width: 72, height: 72, flexShrink: 0 }}>
-                    {profile.avatarUrl ? (
+                    <div className="profile-avatar-large">
+                      {(profile.displayName || 'U').slice(0, 1).toUpperCase()}
+                    </div>
+                    {profile.avatarUrl && (
                       <img
-                        src={`${API_URL}${profile.avatarUrl}`}
+                        src={profile.avatarUrl.startsWith('http') ? profile.avatarUrl : `${API_URL}${profile.avatarUrl}`}
                         alt="avatar"
-                        style={{ width: 72, height: 72, borderRadius: '50%', objectFit: 'cover' }}
+                        style={{ position: 'absolute', inset: 0, width: 72, height: 72, borderRadius: '50%', objectFit: 'cover' }}
+                        onError={e => { e.currentTarget.style.display = 'none' }}
                       />
-                    ) : (
-                      <div className="profile-avatar-large">
-                        {(profile.displayName || 'U').slice(0, 1).toUpperCase()}
-                      </div>
                     )}
                     <button
                       title="Đổi ảnh đại diện"

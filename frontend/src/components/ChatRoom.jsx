@@ -4,7 +4,7 @@ import { useChatStore } from '../stores/useChatStore'
 import axios from 'axios'
 import { API_URL } from '../config'
 import { useToast } from './Toast'
-import { IconSend, IconPaperclip, IconMic, IconSmile, IconReply, IconEdit, IconTrash, IconX, IconFile, IconMessage, IconCheckCheck, IconCheck } from './QIcons'
+import { IconSend, IconPaperclip, IconMic, IconSmile, IconReply, IconEdit, IconTrash, IconX, IconFile, IconMessage, IconCheckCheck, IconCheck, IconImage } from './QIcons'
 import EmojiPicker from 'emoji-picker-react'
 
 const QUICK_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '😡'];
@@ -36,6 +36,7 @@ export default function ChatRoom({ token, conversationId, user, searchQuery, con
 
   // File & Recording
   const fileInputRef = useRef(null);
+  const imageInputRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const [isRecording, setIsRecording] = useState(false);
   const audioChunksRef = useRef([]);
@@ -500,6 +501,23 @@ export default function ChatRoom({ token, conversationId, user, searchQuery, con
     return () => document.removeEventListener('click', handleClickOutside);
   }, []);
 
+  // Paste image from clipboard (Ctrl+V)
+  useEffect(() => {
+    const handlePaste = (e) => {
+      if (!conversationId) return;
+      const items = Array.from(e.clipboardData?.items || []);
+      const imageItem = items.find(it => it.type.startsWith('image/'));
+      if (!imageItem) return;
+      e.preventDefault();
+      const file = imageItem.getAsFile();
+      if (!file) return;
+      const previewUrl = URL.createObjectURL(file);
+      setPendingFile({ file, previewUrl, type: 'image', name: 'clipboard-image.png' });
+    };
+    document.addEventListener('paste', handlePaste);
+    return () => document.removeEventListener('paste', handlePaste);
+  }, [conversationId]);
+
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="chat-room-container">
@@ -713,30 +731,66 @@ export default function ChatRoom({ token, conversationId, user, searchQuery, con
           {/* File preview bar */}
           {pendingFile && (
             <div style={{
-              display: 'flex', alignItems: 'center', gap: 10,
-              padding: '8px 12px', background: 'var(--card)',
-              border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
-              animation: 'slideDownIn 0.15s ease',
+              background: 'var(--card)', border: '1px solid var(--border)',
+              borderRadius: 'var(--radius-lg)', overflow: 'hidden',
+              animation: 'slideDownIn 0.15s ease', position: 'relative',
             }}>
+              {/* Image preview — large */}
               {pendingFile.type === 'image' && pendingFile.previewUrl && (
-                <img src={pendingFile.previewUrl} alt="preview" style={{ width: 52, height: 52, objectFit: 'cover', borderRadius: 8, flexShrink: 0 }} />
+                <div style={{ position: 'relative' }}>
+                  <img
+                    src={pendingFile.previewUrl}
+                    alt="preview"
+                    style={{
+                      display: 'block', width: '100%',
+                      maxHeight: 280, objectFit: 'contain',
+                      background: '#000',
+                    }}
+                  />
+                  <button
+                    className="btn-icon"
+                    onClick={removePendingFile}
+                    style={{
+                      position: 'absolute', top: 8, right: 8,
+                      background: 'rgba(0,0,0,0.6)', borderRadius: '50%',
+                      width: 28, height: 28, color: '#fff',
+                    }}
+                  >
+                    <IconX size={14} />
+                  </button>
+                </div>
               )}
+
+              {/* Video preview */}
               {pendingFile.type === 'video' && pendingFile.previewUrl && (
-                <video src={pendingFile.previewUrl} style={{ width: 80, height: 52, objectFit: 'cover', borderRadius: 8, flexShrink: 0 }} />
+                <div style={{ position: 'relative' }}>
+                  <video src={pendingFile.previewUrl} style={{ display: 'block', width: '100%', maxHeight: 220 }} controls />
+                  <button className="btn-icon" onClick={removePendingFile} style={{ position: 'absolute', top: 8, right: 8, background: 'rgba(0,0,0,0.6)', borderRadius: '50%', width: 28, height: 28, color: '#fff' }}>
+                    <IconX size={14} />
+                  </button>
+                </div>
               )}
+
+              {/* File / Audio row */}
               {(pendingFile.type === 'file' || pendingFile.type === 'audio') && (
-                <div style={{ width: 40, height: 40, borderRadius: 8, background: 'var(--accent-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <IconFile size={20} style={{ color: 'var(--accent)' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px' }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 8, background: 'var(--accent-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <IconFile size={20} style={{ color: 'var(--accent)' }} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: '0.85rem', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{pendingFile.name}</div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>Nhấn Gửi để gửi</div>
+                  </div>
+                  <button className="btn-icon" onClick={removePendingFile}><IconX size={16} /></button>
                 </div>
               )}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: '0.82rem', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{pendingFile.name}</div>
-                <div style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>
-                  {pendingFile.type === 'image' ? 'Ảnh' : pendingFile.type === 'video' ? 'Video' : pendingFile.type === 'audio' ? 'Audio' : 'Tệp'}
-                  {' · Nhấn Gửi để gửi'}
+
+              {/* Caption hint for image */}
+              {pendingFile.type === 'image' && (
+                <div style={{ padding: '6px 10px', fontSize: '0.72rem', color: 'var(--muted)', borderTop: '1px solid var(--border)' }}>
+                  Thêm chú thích… hoặc nhấn Gửi ngay
                 </div>
-              </div>
-              <button className="btn-icon" onClick={removePendingFile} title="Bỏ file"><IconX size={16} /></button>
+              )}
             </div>
           )}
 
@@ -755,9 +809,12 @@ export default function ChatRoom({ token, conversationId, user, searchQuery, con
             )}
           </div>
           <div className="chat-input-controls">
-            <input type="file" ref={fileInputRef} style={{ display: 'none' }} onChange={handleFileSelect} />
-            <button className="btn-icon-simple" title="Attach file" onClick={() => fileInputRef.current?.click()}><IconPaperclip size={18} /></button>
-            <button className="btn-icon-simple" title="Record Voice" onClick={startRecording}><IconMic size={18} /></button>
+            {/* File inputs */}
+            <input type="file" ref={imageInputRef} accept="image/*,video/*" style={{ display: 'none' }} onChange={handleFileSelect} />
+            <input type="file" ref={fileInputRef} accept="*/*" style={{ display: 'none' }} onChange={handleFileSelect} />
+            <button className="btn-icon-simple" title="Gửi ảnh / video" onClick={() => imageInputRef.current?.click()}><IconImage size={18} /></button>
+            <button className="btn-icon-simple" title="Đính kèm file" onClick={() => fileInputRef.current?.click()}><IconPaperclip size={18} /></button>
+            <button className="btn-icon-simple" title="Ghi âm" onClick={startRecording}><IconMic size={18} /></button>
             <button
               className="btn-icon-simple"
               title="Emoji"

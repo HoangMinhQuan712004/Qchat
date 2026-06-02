@@ -49,6 +49,7 @@ export const IconHome         = (p) => <I {...p} d="<path d='M3 9l9-7 9 7v11a2 2
 export const IconSquare       = (p) => <I {...p} d="<rect x='3' y='3' width='18' height='18' rx='2' ry='2'/>" />
 export const IconStop         = (p) => <I {...p} d="<rect x='3' y='3' width='18' height='18' rx='2' ry='2'/>" fill="currentColor" sw={0} />
 export const IconChevronDown  = (p) => <I {...p} d="<polyline points='6 9 12 15 18 9'/>" />
+export const IconImage        = (p) => <I {...p} d="<rect x='3' y='3' width='18' height='18' rx='2' ry='2'/><circle cx='8.5' cy='8.5' r='1.5'/><polyline points='21 15 16 10 5 21'/>" />
 export const IconCheckCheck   = (p) => <I {...p} d="<polyline points='17 1 9 9 6 6'/><polyline points='22 6 12 16 9 13'/>" />
 export const IconPhone        = (p) => <I {...p} d="<path d='M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.82a16 16 0 0 0 6.29 6.29l1.17-1.17a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z'/>" />
 export const IconPhoneOff     = (p) => <I {...p} d="<path d='M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-3.45-3.07M5.26 5.26A19.79 19.79 0 0 0 3.32 12a19.79 19.79 0 0 0 3.07 8.63 2 2 0 0 0 2.18.46 12.84 12.84 0 0 0 2.81-.7 2 2 0 0 0 .45-2.11l-1.27-1.27'/><line x1='1' y1='1' x2='23' y2='23'/>" />
